@@ -811,3 +811,4 @@ function createDefaultImageForHosting($width, $height, $bgColor, $textColor) {
     
     return $imageData;
 }
+

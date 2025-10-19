@@ -349,3 +349,4 @@ echo "3. Test: http://localhost:8000/\n";
 echo "4. Check if hero section text is now white\n";
 echo "5. If still black, check for other CSS overrides\n";
 echo "6. Check server logs for any remaining errors\n";
+

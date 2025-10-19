@@ -191,3 +191,4 @@ echo "🔑 Admin Login:\n";
 echo "- URL: http://localhost:8000/login\n";
 echo "- Email: admin@namrole.sch.id\n";
 echo "- Password: admin123\n";
+

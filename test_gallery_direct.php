@@ -346,3 +346,4 @@ echo "   - Password: admin123\n";
 echo "\n🌐 Test URLs:\n";
 echo "   - Gallery Index: http://localhost:8000/admin/gallery\n";
 echo "   - Check all gallery edit URLs above\n";
+

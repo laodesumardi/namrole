@@ -363,3 +363,4 @@ echo "   - Test image upload functionality\n";
 echo "\n🔑 Admin Login:\n";
 echo "   - Email: admin@namrole.sch.id\n";
 echo "   - Password: admin123\n";
+

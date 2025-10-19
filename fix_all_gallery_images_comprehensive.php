@@ -604,3 +604,4 @@ function copyDirectory($source, $destination) {
         }
     }
 }
+

@@ -310,3 +310,4 @@ echo "2. Run: php fix_hosting_database_config.php\n";
 echo "3. Check: https://uji.odetune.shop/simple-test.php\n";
 echo "4. Test: https://uji.odetune.shop/\n";
 echo "5. Check server logs for any remaining errors\n";
+

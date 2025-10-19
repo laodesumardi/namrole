@@ -299,3 +299,4 @@ echo "3. Test: http://localhost:8000/html-test.html\n";
 echo "4. Test: http://localhost:8000/\n";
 echo "5. Check if 500 error is resolved\n";
 echo "6. Check server logs for any remaining errors\n";
+

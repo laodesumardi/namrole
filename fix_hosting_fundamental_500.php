@@ -388,3 +388,4 @@ echo "3. Test: https://uji.odetune.shop/hello.php\n";
 echo "4. Test: https://uji.odetune.shop/index-test.html\n";
 echo "5. Test: https://uji.odetune.shop/phpinfo.php\n";
 echo "6. Check server logs for any remaining errors\n";
+

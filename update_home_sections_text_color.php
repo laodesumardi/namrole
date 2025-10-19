@@ -279,3 +279,4 @@ echo "2. Test: http://localhost:8000/admin/home-sections\n";
 echo "3. Test: http://localhost:8000/\n";
 echo "4. Check if all home sections now have white text\n";
 echo "5. Check server logs for any remaining errors\n";
+

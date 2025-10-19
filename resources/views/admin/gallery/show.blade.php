@@ -165,8 +165,8 @@
                 @foreach($items as $item)
                 <div class="relative group">
                     @if($item->isImage())
-                        <img src="{{ $item->file_url }}" 
-                             alt="{{ $item->title }}" 
+                        <img src="{{ $item- onerror="this.src='{{ asset('images/default-gallery.png') }}'">file_url }}" 
+                             alt="{{ $item- onerror="this.src='{{ asset('images/default-gallery.png') }}'">title }}" 
                              class="w-full h-24 object-cover rounded-lg border border-gray-300">
                     @else
                         <div class="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">

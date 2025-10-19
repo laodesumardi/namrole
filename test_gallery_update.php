@@ -420,3 +420,4 @@ echo "   - Password: admin123\n";
 echo "\n🌐 Test URLs:\n";
 echo "   - Gallery Update: http://localhost:8000/admin/gallery/2/edit\n";
 echo "   - Gallery Index: http://localhost:8000/admin/gallery\n";
+

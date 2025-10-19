@@ -56,12 +56,13 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full flex items-center justify-center" style="background-color: {{ $social->color }}">
+                                        <div class="h-10 w-10 rounded-full flex items-center justify-center text-white" style="background-color: {{ $social->color }}">
                                             {!! $social->icon_html !!}
                                         </div>
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900">{{ $social->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $social->platform_name }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -82,29 +83,23 @@
                                 {{ $social->sort_order }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $social->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                    {{ $social->is_active ? 'Aktif' : 'Tidak Aktif' }}
-                                </span>
+                                @if($social->is_active)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Tidak Aktif
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <a href="{{ route('admin.social-media.edit', $social) }}" class="text-blue-600 hover:text-blue-900">
+                                    <a href="{{ route('admin.social-media.edit', $social) }}" class="text-indigo-600 hover:text-indigo-900">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                     </a>
-                                    <form action="{{ route('admin.social-media.toggle-active', $social) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-{{ $social->is_active ? 'yellow' : 'green' }}-600 hover:text-{{ $social->is_active ? 'yellow' : 'green' }}-900">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                @if($social->is_active)
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
-                                                @else
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                @endif
-                                            </svg>
-                                        </button>
-                                    </form>
                                     <form action="{{ route('admin.social-media.destroy', $social) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sosial media ini?')">
                                         @csrf
                                         @method('DELETE')
@@ -119,14 +114,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6H4a1 1 0 110-2h3zM9 6v10h6V6H9z"></path>
-                                    </svg>
-                                    <p class="text-lg font-medium text-gray-900 mb-2">Belum ada sosial media</p>
-                                    <p class="text-gray-500">Klik tombol "Tambah Sosial Media" untuk menambahkan sosial media pertama.</p>
-                                </div>
+                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                                Belum ada sosial media yang ditambahkan.
                             </td>
                         </tr>
                     @endforelse

@@ -166,4 +166,88 @@ class Gallery extends Model
     {
         return $this->is_featured === true;
     }
+
+    /**
+     * Get the count of items in this gallery
+     */
+    public function getItemCount()
+    {
+        return $this->items()->count();
+    }
+
+    /**
+     * Get the count of items in this gallery (alias for getItemCount)
+     */
+    public function itemCount()
+    {
+        return $this->getItemCount();
+    }
+
+    /**
+     * Get the count of items in this gallery (accessor)
+     */
+    public function getItemCountAttribute()
+    {
+        return $this->getItemCount();
+    }
+
+    /**
+     * Get the first item in this gallery
+     */
+    public function getFirstItem()
+    {
+        return $this->items()->first();
+    }
+
+    /**
+     * Get the last item in this gallery
+     */
+    public function getLastItem()
+    {
+        return $this->items()->latest()->first();
+    }
+
+    /**
+     * Get random items from this gallery
+     */
+    public function getRandomItems($limit = 3)
+    {
+        return $this->items()->inRandomOrder()->limit($limit)->get();
+    }
+
+    /**
+     * Get recent items from this gallery
+     */
+    public function getRecentItems($limit = 5)
+    {
+        return $this->items()->latest()->limit($limit)->get();
+    }
+
+    /**
+     * Check if gallery has items
+     */
+    public function hasItems()
+    {
+        return $this->getItemCount() > 0;
+    }
+
+    /**
+     * Get gallery summary
+     */
+    public function getSummary()
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'category' => $this->category_label,
+            'type' => $this->type_label,
+            'status' => $this->status_label,
+            'is_featured' => $this->is_featured,
+            'item_count' => $this->getItemCount(),
+            'cover_image_url' => $this->cover_image_url,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
+        ];
+    }
 }

@@ -155,3 +155,4 @@ echo "1. Test the homepage to see if Gallery section loads without errors\n";
 echo "2. Check if Gallery category labels display correctly\n";
 echo "3. Verify no more 'Call to undefined method' errors\n";
 echo "4. Run test_gallery_accessors.php to verify accessors work\n";
+
