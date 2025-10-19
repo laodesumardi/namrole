@@ -1,0 +1,95 @@
+/* Force White Text for Home Sections */
+.hero-section,
+.home-section,
+.section-hero,
+.section-title,
+.section-subtitle,
+.section-description,
+.section-content,
+h1, h2, h3, h4, h5, h6,
+.title, .subtitle, .description,
+.text-white {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for Specific Elements */
+.hero-section h1,
+.hero-section h2,
+.hero-section .title,
+.hero-section .subtitle,
+.hero-section .description,
+.hero-section p,
+.hero-section span,
+.hero-section div {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for All Text Elements */
+* {
+    color: #ffffff !important;
+}
+
+/* Override any existing color styles */
+[style*="color"] {
+    color: #ffffff !important;
+}
+
+/* Force White Text for Home Sections Admin */
+.admin-home-sections .section-title,
+.admin-home-sections .section-subtitle,
+.admin-home-sections .section-description {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for All Sections */
+.section-title,
+.section-subtitle,
+.section-description,
+.section-content,
+.section-text {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for Specific Classes */
+.text-dark,
+.text-black,
+.text-gray,
+.text-gray-900,
+.text-gray-800,
+.text-gray-700,
+.text-gray-600 {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for Bootstrap Classes */
+.text-primary,
+.text-secondary,
+.text-success,
+.text-danger,
+.text-warning,
+.text-info,
+.text-light,
+.text-dark {
+    color: #ffffff !important;
+    color: white !important;
+}
+
+/* Force White Text for Tailwind Classes */
+.text-black,
+.text-gray-900,
+.text-gray-800,
+.text-gray-700,
+.text-gray-600,
+.text-gray-500,
+.text-gray-400,
+.text-gray-300,
+.text-gray-200,
+.text-gray-100 {
+    color: #ffffff !important;
+    color: white !important;
+}
