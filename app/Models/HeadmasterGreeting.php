@@ -31,19 +31,27 @@ class HeadmasterGreeting extends Model
             return $this->photo;
         }
         
-        if (str_starts_with($this->photo, 'headmaster-greetings/')) {
-            return asset('storage/' . $this->photo);
-        }
-        
+        // If it starts with storage/, use it directly with asset()
         if (str_starts_with($this->photo, 'storage/')) {
             return asset($this->photo);
         }
         
-        if (!str_starts_with($this->photo, 'headmaster-greetings/') && 
-            !str_starts_with($this->photo, 'storage/')) {
+        // If it starts with headmaster-greetings/, add storage/ prefix
+        if (str_starts_with($this->photo, 'headmaster-greetings/')) {
             return asset('storage/' . $this->photo);
         }
         
+        // If it starts with uploads/headmaster-greetings/, change to storage/headmaster-greetings/
+        if (str_starts_with($this->photo, 'uploads/headmaster-greetings/')) {
+            return asset(str_replace('uploads/headmaster-greetings/', 'storage/headmaster-greetings/', $this->photo));
+        }
+        
+        // If it's just a filename, add the full path
+        if (!str_contains($this->photo, '/')) {
+            return asset('storage/headmaster-greetings/' . $this->photo);
+        }
+        
+        // Default fallback
         return asset('images/default-headmaster.png');
     }
 
