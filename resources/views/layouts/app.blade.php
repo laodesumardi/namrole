@@ -27,7 +27,12 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php($useVite = file_exists(public_path('hot')) || file_exists(public_path('build/manifest.json')))
+    @if($useVite)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @endif
     
     <!-- Loading Indicator -->
     <style>
