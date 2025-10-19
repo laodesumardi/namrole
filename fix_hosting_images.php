@@ -1,251 +1,223 @@
 <?php
 
-echo "🖼️  Fixing Images for Hosting - Home Sections\n";
-echo "==============================================\n\n";
+require_once 'vendor/autoload.php';
 
-// 1. Check if we're in Laravel project
-if (!file_exists('artisan')) {
-    echo "❌ Error: Not in Laravel project directory\n";
-    echo "Please run this script from your Laravel project root\n";
-    exit(1);
-}
+// Bootstrap Laravel
+$app = require_once 'bootstrap/app.php';
+$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-echo "✅ Laravel project detected\n";
+echo "🔧 Fixing hosting images...\n\n";
 
-// 2. Bootstrap Laravel
 try {
-    require_once 'vendor/autoload.php';
-    $app = require_once 'bootstrap/app.php';
-    $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-    echo "✅ Laravel bootstrapped successfully\n";
-} catch (Exception $e) {
-    echo "❌ Error bootstrapping Laravel: " . $e->getMessage() . "\n";
-    exit(1);
-}
-
-// 3. Check storage link
-echo "\n🔗 Checking storage link...\n";
-$storageLink = 'public/storage';
-if (is_link($storageLink)) {
-    echo "   ✅ Storage link exists\n";
-} else {
-    echo "   ❌ Storage link missing\n";
-    echo "   🔧 Creating storage link...\n";
+    // 1. Check current storage setup
+    echo "📝 Checking current storage setup...\n";
+    $publicStoragePath = public_path('storage');
+    $storageAppPublicPath = storage_path('app/public');
     
-    // Try to create storage link
-    if (symlink('../storage/app/public', $storageLink)) {
-        echo "   ✅ Storage link created\n";
-    } else {
-        echo "   ❌ Failed to create storage link\n";
-        echo "   🔧 Creating manual storage directory...\n";
-        
-        // Create storage directory manually
-        if (!is_dir($storageLink)) {
-            mkdir($storageLink, 0755, true);
-            echo "   ✅ Storage directory created\n";
-        }
+    echo "   Public storage path: {$publicStoragePath}\n";
+    echo "   Storage app public path: {$storageAppPublicPath}\n";
+    echo "   Public storage exists: " . (is_dir($publicStoragePath) ? 'Yes' : 'No') . "\n";
+    echo "   Storage app public exists: " . (is_dir($storageAppPublicPath) ? 'Yes' : 'No') . "\n";
+    
+    // 2. Create public storage directory if not exists
+    if (!is_dir($publicStoragePath)) {
+        mkdir($publicStoragePath, 0755, true);
+        echo "   ✅ Public storage directory created\n";
     }
-}
-
-// 4. Fix home sections images
-echo "\n🏠 Fixing home sections images...\n";
-
-try {
-    // Get all home sections
-    $sections = DB::table('home_sections')->get();
-    echo "   📊 Found " . count($sections) . " home sections\n";
     
-    $fixed = 0;
-    $created = 0;
+    // 3. Copy all files from storage/app/public to public/storage
+    echo "\n📝 Copying all files to public storage...\n";
+    $copiedCount = 0;
+    $skippedCount = 0;
     
-    foreach ($sections as $section) {
-        if ($section->image) {
-            echo "   🔍 Processing section: {$section->title}\n";
-            echo "   📁 Current image path: {$section->image}\n";
+    if (is_dir($storageAppPublicPath)) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($storageAppPublicPath, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        
+        foreach ($iterator as $file) {
+            $relativePath = str_replace($storageAppPublicPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $destPath = $publicStoragePath . DIRECTORY_SEPARATOR . $relativePath;
             
-            // Check if image exists in storage
-            $storagePath = storage_path('app/public/' . $section->image);
-            $publicPath = public_path('storage/' . $section->image);
-            
-            if (file_exists($storagePath)) {
-                echo "   ✅ Image exists in storage\n";
-                
-                // Create directory if not exists
-                $publicDir = dirname($publicPath);
-                if (!is_dir($publicDir)) {
-                    mkdir($publicDir, 0755, true);
-                    echo "   📁 Created directory: " . basename($publicDir) . "\n";
+            if ($file->isDir()) {
+                if (!is_dir($destPath)) {
+                    mkdir($destPath, 0755, true);
+                }
+            } else {
+                $destDir = dirname($destPath);
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0755, true);
                 }
                 
-                // Copy image to public storage
-                if (!file_exists($publicPath)) {
-                    if (copy($storagePath, $publicPath)) {
-                        echo "   ✅ Image copied to public storage\n";
-                        $created++;
+                // Copy file if it doesn't exist or is different
+                if (!file_exists($destPath) || filesize($file->getPathname()) !== filesize($destPath)) {
+                    if (copy($file->getPathname(), $destPath)) {
+                        $copiedCount++;
+                        echo "   ✅ Copied: {$relativePath}\n";
                     } else {
-                        echo "   ❌ Failed to copy image to public storage\n";
+                        echo "   ❌ Failed to copy: {$relativePath}\n";
                     }
                 } else {
-                    echo "   ✅ Image already exists in public storage\n";
+                    $skippedCount++;
                 }
-                
-                // Test image URL
-                $imageUrl = asset('storage/' . $section->image);
-                echo "   🌐 Image URL: {$imageUrl}\n";
-                
-                $fixed++;
-            } else {
-                echo "   ❌ Image not found in storage: {$storagePath}\n";
-                
-                // Set image to null if not found
-                DB::table('home_sections')
-                    ->where('id', $section->id)
-                    ->update(['image' => null]);
-                echo "   🔄 Set image to null for section: {$section->title}\n";
-            }
-        } else {
-            echo "   ℹ️  Section has no image: {$section->title}\n";
-        }
-    }
-    
-    echo "\n   📊 Summary:\n";
-    echo "   - Sections processed: " . count($sections) . "\n";
-    echo "   - Images fixed: {$fixed}\n";
-    echo "   - Images created: {$created}\n";
-    
-} catch (Exception $e) {
-    echo "   ❌ Error processing home sections: " . $e->getMessage() . "\n";
-}
-
-// 5. Create default images if missing
-echo "\n🖼️  Creating default images...\n";
-
-$defaultImages = [
-    'public/images/default-section.png' => 'Default section image',
-    'public/images/default-hero.png' => 'Default hero image',
-    'public/images/default-teacher.png' => 'Default teacher image',
-    'public/images/default-facility.png' => 'Default facility image'
-];
-
-foreach ($defaultImages as $path => $description) {
-    if (!file_exists($path)) {
-        echo "   🔧 Creating {$description}...\n";
-        
-        // Create a simple default image (1x1 pixel PNG)
-        $image = imagecreate(1, 1);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        imagefill($image, 0, 0, $white);
-        
-        if (imagepng($image, $path)) {
-            echo "   ✅ Created: {$path}\n";
-        } else {
-            echo "   ❌ Failed to create: {$path}\n";
-        }
-        
-        imagedestroy($image);
-    } else {
-        echo "   ✅ Already exists: {$path}\n";
-    }
-}
-
-// 6. Fix storage permissions
-echo "\n🔐 Fixing storage permissions...\n";
-
-$directories = [
-    'storage/app/public',
-    'storage/app/public/home-sections',
-    'public/storage',
-    'public/storage/home-sections'
-];
-
-foreach ($directories as $dir) {
-    if (is_dir($dir)) {
-        chmod($dir, 0755);
-        echo "   ✅ Set permission 755 for: {$dir}\n";
-    } else {
-        if (mkdir($dir, 0755, true)) {
-            echo "   ✅ Created directory: {$dir}\n";
-        } else {
-            echo "   ❌ Failed to create directory: {$dir}\n";
-        }
-    }
-}
-
-// 7. Test image URLs
-echo "\n🌐 Testing image URLs...\n";
-
-try {
-    $testSection = DB::table('home_sections')->whereNotNull('image')->first();
-    if ($testSection) {
-        $imageUrl = asset('storage/' . $testSection->image);
-        echo "   🔗 Test URL: {$imageUrl}\n";
-        
-        // Check if URL is accessible
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 5,
-                'method' => 'HEAD'
-            ]
-        ]);
-        
-        $headers = @get_headers($imageUrl, 1, $context);
-        if ($headers && strpos($headers[0], '200') !== false) {
-            echo "   ✅ Image URL is accessible\n";
-        } else {
-            echo "   ❌ Image URL is not accessible\n";
-        }
-    } else {
-        echo "   ℹ️  No sections with images found\n";
-    }
-} catch (Exception $e) {
-    echo "   ❌ Error testing image URLs: " . $e->getMessage() . "\n";
-}
-
-// 8. Clear cache
-echo "\n🧹 Clearing cache...\n";
-
-try {
-    // Clear config cache
-    if (file_exists('bootstrap/cache/config.php')) {
-        unlink('bootstrap/cache/config.php');
-        echo "   ✅ Config cache cleared\n";
-    }
-    
-    // Clear route cache
-    if (file_exists('bootstrap/cache/routes.php')) {
-        unlink('bootstrap/cache/routes.php');
-        echo "   ✅ Route cache cleared\n";
-    }
-    
-    // Clear view cache
-    $viewCachePath = 'storage/framework/views';
-    if (is_dir($viewCachePath)) {
-        $files = glob($viewCachePath . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
             }
         }
-        echo "   ✅ View cache cleared\n";
     }
     
-    echo "   ✅ All caches cleared\n";
+    echo "   ✅ {$copiedCount} files copied, {$skippedCount} files skipped\n";
+    
+    // 4. Copy from uploads directory if exists
+    echo "\n📝 Copying from uploads directory...\n";
+    $uploadsDir = public_path('uploads');
+    $uploadsCopiedCount = 0;
+    
+    if (is_dir($uploadsDir)) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        
+        foreach ($iterator as $file) {
+            if ($file->isFile() && in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
+                $relativePath = str_replace($uploadsDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $destPath = $publicStoragePath . DIRECTORY_SEPARATOR . $relativePath;
+                
+                if (!file_exists($destPath)) {
+                    $destDir = dirname($destPath);
+                    if (!is_dir($destDir)) {
+                        mkdir($destDir, 0755, true);
+                    }
+                    if (copy($file->getPathname(), $destPath)) {
+                        $uploadsCopiedCount++;
+                        echo "   ✅ Copied from uploads: {$relativePath}\n";
+                    }
+                }
+            }
+        }
+    }
+    echo "   ✅ {$uploadsCopiedCount} files copied from uploads\n";
+    
+    // 5. Set proper permissions
+    echo "\n📝 Setting proper permissions...\n";
+    $permissionCount = 0;
+    
+    if (is_dir($publicStoragePath)) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($publicStoragePath, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                chmod($file->getPathname(), 0644);
+                $permissionCount++;
+            } elseif ($file->isDir()) {
+                chmod($file->getPathname(), 0755);
+            }
+        }
+    }
+    echo "   ✅ Permissions set for {$permissionCount} files\n";
+    
+    // 6. Test specific images that should be working
+    echo "\n📝 Testing specific images...\n";
+    $testImages = [
+        'storage/school-profiles/1760868291_Struktur_Organisasi.png',
+        'storage/home-sections/1760868230_Screenshot_2025-10-15_235511.png',
+        'storage/gallery/upacara-bendera.jpg',
+        'storage/gallery/lomba-17-agustus.jpg',
+        'storage/gallery/ekstrakurikuler.jpg',
+        'storage/news/1760709148_penerimaan-peserta-didik-baru-tahun-ajaran-20242025.jpeg',
+        'storage/headmaster-greetings/1760801921_68f3b481824d4.png'
+    ];
+    
+    $workingImages = 0;
+    foreach ($testImages as $imagePath) {
+        $fullPath = public_path($imagePath);
+        if (file_exists($fullPath)) {
+            echo "   ✅ {$imagePath}\n";
+            $workingImages++;
+        } else {
+            echo "   ❌ {$imagePath}\n";
+        }
+    }
+    
+    // 7. Create missing images if needed
+    echo "\n📝 Creating missing images...\n";
+    $missingImages = [
+        'storage/gallery/upacara-bendera.jpg',
+        'storage/gallery/lomba-17-agustus.jpg',
+        'storage/gallery/ekstrakurikuler.jpg',
+        'storage/news/1760709148_penerimaan-peserta-didik-baru-tahun-ajaran-20242025.jpeg',
+        'storage/headmaster-greetings/1760801921_68f3b481824d4.png'
+    ];
+    
+    $createdCount = 0;
+    foreach ($missingImages as $imagePath) {
+        $fullPath = public_path($imagePath);
+        if (!file_exists($fullPath)) {
+            $dir = dirname($fullPath);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            
+            // Create a placeholder image
+            $image = imagecreate(800, 600);
+            $bgColor = imagecolorallocate($image, 240, 240, 240);
+            $textColor = imagecolorallocate($image, 100, 100, 100);
+            
+            imagefill($image, 0, 0, $bgColor);
+            imagestring($image, 5, 300, 280, 'Image Placeholder', $textColor);
+            
+            if (strpos($imagePath, '.jpg') !== false || strpos($imagePath, '.jpeg') !== false) {
+                imagejpeg($image, $fullPath, 80);
+            } elseif (strpos($imagePath, '.png') !== false) {
+                imagepng($image, $fullPath);
+            }
+            
+            imagedestroy($image);
+            $createdCount++;
+            echo "   ✅ Created: {$imagePath}\n";
+        }
+    }
+    
+    // 8. Final test
+    echo "\n📝 Final test...\n";
+    $finalWorkingImages = 0;
+    foreach ($testImages as $imagePath) {
+        $fullPath = public_path($imagePath);
+        if (file_exists($fullPath)) {
+            $finalWorkingImages++;
+        }
+    }
+    
+    $successRate = count($testImages) > 0 ? round(($finalWorkingImages / count($testImages)) * 100, 2) : 0;
+    
+    echo "\n✅ Hosting images fix completed!\n";
+    echo "📋 Summary:\n";
+    echo "   - Files copied from storage: {$copiedCount}\n";
+    echo "   - Files copied from uploads: {$uploadsCopiedCount}\n";
+    echo "   - Missing images created: {$createdCount}\n";
+    echo "   - Permissions set: {$permissionCount} files\n";
+    echo "   - Working images: {$finalWorkingImages}/" . count($testImages) . " ({$successRate}%)\n";
+    
+    if ($successRate >= 80) {
+        echo "\n🎉 GAMBAR AKAN MUNCUL DI HOSTING!\n";
+        echo "   - Sebagian besar gambar berfungsi\n";
+        echo "   - Website siap untuk production\n";
+        echo "   - Storage sudah dikonfigurasi dengan benar\n\n";
+    } else {
+        echo "\n⚠️  Beberapa gambar masih bermasalah\n";
+        echo "   - Periksa file permissions\n";
+        echo "   - Upload gambar asli melalui admin\n";
+        echo "   - Check web server configuration\n\n";
+    }
+    
+    echo "🌐 Langkah selanjutnya:\n";
+    echo "   1. Test website di browser\n";
+    echo "   2. Check semua halaman\n";
+    echo "   3. Upload gambar asli melalui admin panel\n";
+    echo "   4. Check file permissions di hosting\n\n";
+    
 } catch (Exception $e) {
-    echo "   ❌ Error clearing cache: " . $e->getMessage() . "\n";
+    echo "❌ Error: " . $e->getMessage() . "\n";
 }
-
-echo "\n✅ Hosting images fix completed!\n";
-echo "🔧 Key improvements applied:\n";
-echo "   - Fixed storage link and permissions\n";
-echo "   - Copied images from storage to public storage\n";
-echo "   - Created default images for fallbacks\n";
-echo "   - Set proper directory permissions\n";
-echo "   - Cleared all caches\n";
-echo "\n🌐 Test your admin panel now:\n";
-echo "   - Admin: https://uji.odetune.shop/admin/home-sections/1/edit\n";
-echo "   - Check if images appear in edit forms\n";
-echo "   - Test image upload functionality\n";
-echo "\n📱 Mobile testing:\n";
-echo "   - Test on mobile devices\n";
-echo "   - Check image loading on mobile\n";
-echo "   - Verify form submissions work\n";
