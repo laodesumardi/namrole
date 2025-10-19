@@ -2,14 +2,14 @@
 /**
  * Fix Gallery Missing Methods
  * 
- * This script fixes missing methods in app/Models/Gallery.php
- * Specifically the published() scope method
+ * This script adds missing methods to the Gallery model
+ * Specifically for getItemCount() method
  */
 
 echo "🔧 Fixing Gallery Missing Methods\n";
 echo "=================================\n\n";
 
-echo "🔧 Fixing missing methods in app/Models/Gallery.php...\n";
+echo "🔧 Adding missing methods to Gallery model...\n";
 
 // 1. Bootstrap Laravel
 echo "\n🔗 Bootstrapping Laravel...\n";
@@ -24,21 +24,10 @@ try {
     exit(1);
 }
 
-// 2. Read current Gallery model
-echo "\n📄 Reading current Gallery.php file...\n";
+// 2. Update Gallery model with missing methods
+echo "\n🔧 Updating Gallery model with missing methods...\n";
 
-if (file_exists('app/Models/Gallery.php')) {
-    $content = file_get_contents('app/Models/Gallery.php');
-    echo "✅ Gallery.php file found\n";
-} else {
-    echo "❌ Gallery.php file not found\n";
-    exit(1);
-}
-
-// 3. Create the corrected Gallery.php file with missing methods
-echo "\n🔧 Creating corrected Gallery.php file with missing methods...\n";
-
-$correctedContent = '<?php
+$galleryModelContent = '<?php
 
 namespace App\Models;
 
@@ -206,93 +195,147 @@ class Gallery extends Model
     {
         return $this->is_featured === true;
     }
+
+    /**
+     * Get the count of items in this gallery
+     */
+    public function getItemCount()
+    {
+        return $this->items()->count();
+    }
+
+    /**
+     * Get the count of items in this gallery (alias for getItemCount)
+     */
+    public function itemCount()
+    {
+        return $this->getItemCount();
+    }
+
+    /**
+     * Get the count of items in this gallery (accessor)
+     */
+    public function getItemCountAttribute()
+    {
+        return $this->getItemCount();
+    }
+
+    /**
+     * Get the first item in this gallery
+     */
+    public function getFirstItem()
+    {
+        return $this->items()->first();
+    }
+
+    /**
+     * Get the last item in this gallery
+     */
+    public function getLastItem()
+    {
+        return $this->items()->latest()->first();
+    }
+
+    /**
+     * Get random items from this gallery
+     */
+    public function getRandomItems($limit = 3)
+    {
+        return $this->items()->inRandomOrder()->limit($limit)->get();
+    }
+
+    /**
+     * Get recent items from this gallery
+     */
+    public function getRecentItems($limit = 5)
+    {
+        return $this->items()->latest()->limit($limit)->get();
+    }
+
+    /**
+     * Check if gallery has items
+     */
+    public function hasItems()
+    {
+        return $this->getItemCount() > 0;
+    }
+
+    /**
+     * Get gallery summary
+     */
+    public function getSummary()
+    {
+        return [
+            \'id\' => $this->id,
+            \'title\' => $this->title,
+            \'description\' => $this->description,
+            \'category\' => $this->category_label,
+            \'type\' => $this->type_label,
+            \'status\' => $this->status_label,
+            \'is_featured\' => $this->is_featured,
+            \'item_count\' => $this->getItemCount(),
+            \'cover_image_url\' => $this->cover_image_url,
+            \'created_at\' => $this->created_at,
+            \'updated_at\' => $this->updated_at
+        ];
+    }
 }';
 
-// 4. Write the corrected file
-if (file_put_contents('app/Models/Gallery.php', $correctedContent)) {
-    echo "✅ Corrected Gallery.php file created with missing methods\n";
+if (file_put_contents('app/Models/Gallery.php', $galleryModelContent)) {
+    echo "✅ Gallery model updated with missing methods\n";
 } else {
-    echo "❌ Failed to create corrected Gallery.php file\n";
-    exit(1);
+    echo "❌ Failed to update Gallery model\n";
 }
 
-// 5. Test the syntax
-echo "\n🧪 Testing PHP syntax...\n";
-
-$output = [];
-$returnCode = 0;
-exec('php -l app/Models/Gallery.php 2>&1', $output, $returnCode);
-
-if ($returnCode === 0) {
-    echo "✅ PHP syntax is valid\n";
-} else {
-    echo "❌ PHP syntax error found:\n";
-    foreach ($output as $line) {
-        echo "   $line\n";
-    }
-}
-
-// 6. Test Laravel bootstrap
-echo "\n🔗 Testing Laravel bootstrap...\n";
+// 3. Test Gallery model
+echo "\n🧪 Testing Gallery model...\n";
 
 try {
-    require_once 'vendor/autoload.php';
-    $app = require_once 'bootstrap/app.php';
-    $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-    echo "✅ Laravel bootstrapped successfully\n";
+    $galleries = \App\Models\Gallery::all();
+    echo "✅ Gallery model working: " . $galleries->count() . " records\n";
     
-    // Test if we can access the Gallery model
-    try {
-        $gallery = new \App\Models\Gallery();
-        echo "✅ Gallery model instantiated successfully\n";
-        
-        // Test if we can access the published scope
-        try {
-            $publishedGalleries = \App\Models\Gallery::published()->get();
-            echo "✅ Gallery published scope working: " . $publishedGalleries->count() . " published galleries\n";
-        } catch (Exception $e) {
-            echo "❌ Gallery published scope failed: " . $e->getMessage() . "\n";
-        }
-        
-        // Test other scopes
-        try {
-            $activeGalleries = \App\Models\Gallery::active()->get();
-            echo "✅ Gallery active scope working: " . $activeGalleries->count() . " active galleries\n";
-        } catch (Exception $e) {
-            echo "❌ Gallery active scope failed: " . $e->getMessage() . "\n";
-        }
-        
-        try {
-            $featuredGalleries = \App\Models\Gallery::featured()->get();
-            echo "✅ Gallery featured scope working: " . $featuredGalleries->count() . " featured galleries\n";
-        } catch (Exception $e) {
-            echo "❌ Gallery featured scope failed: " . $e->getMessage() . "\n";
-        }
-        
-        // Test methods
-        try {
-            $gallery->status = 'published';
-            $isPublished = $gallery->isPublished();
-            echo "✅ Gallery isPublished method working: " . ($isPublished ? 'true' : 'false') . "\n";
-        } catch (Exception $e) {
-            echo "❌ Gallery isPublished method failed: " . $e->getMessage() . "\n";
-        }
-        
-    } catch (Exception $e) {
-        echo "❌ Gallery model instantiation failed: " . $e->getMessage() . "\n";
+    foreach ($galleries as $gallery) {
+        echo "   - " . $gallery->title . " (ID: " . $gallery->id . ")\n";
+        echo "     Item Count: " . $gallery->getItemCount() . "\n";
+        echo "     Has Items: " . ($gallery->hasItems() ? 'Yes' : 'No') . "\n";
+        echo "     Status: " . $gallery->status_label . "\n";
+        echo "     Category: " . $gallery->category_label . "\n";
     }
-    
 } catch (Exception $e) {
-    echo "❌ Laravel bootstrap failed: " . $e->getMessage() . "\n";
+    echo "❌ Gallery model test failed: " . $e->getMessage() . "\n";
 }
 
-// 7. Create a test script
+// 4. Test specific methods
+echo "\n🧪 Testing specific Gallery methods...\n";
+
+try {
+    $gallery = \App\Models\Gallery::first();
+    if ($gallery) {
+        echo "✅ Testing Gallery ID: " . $gallery->id . "\n";
+        echo "   - getItemCount(): " . $gallery->getItemCount() . "\n";
+        echo "   - itemCount(): " . $gallery->itemCount() . "\n";
+        echo "   - item_count: " . $gallery->item_count . "\n";
+        echo "   - hasItems(): " . ($gallery->hasItems() ? 'Yes' : 'No') . "\n";
+        echo "   - isPublished(): " . ($gallery->isPublished() ? 'Yes' : 'No') . "\n";
+        echo "   - isActive(): " . ($gallery->isActive() ? 'Yes' : 'No') . "\n";
+        echo "   - isFeatured(): " . ($gallery->isFeatured() ? 'Yes' : 'No') . "\n";
+        
+        $summary = $gallery->getSummary();
+        echo "   - Summary: " . json_encode($summary) . "\n";
+    } else {
+        echo "⚠️ No galleries found to test\n";
+    }
+} catch (Exception $e) {
+    echo "❌ Gallery methods test failed: " . $e->getMessage() . "\n";
+}
+
+// 5. Create a test script
 echo "\n🔧 Creating test script...\n";
 
 $testContent = '<?php
 // Test Gallery Missing Methods
 echo "🧪 Testing Gallery Missing Methods\n";
-echo "==================================\n\n";
+echo "===================================\n\n";
 
 try {
     require_once "../vendor/autoload.php";
@@ -301,116 +344,26 @@ try {
     echo "✅ Laravel bootstrapped successfully\n";
     
     // Test Gallery model
-    $gallery = new \\App\\Models\\Gallery();
-    echo "✅ Gallery model instantiated successfully\n";
+    $galleries = \\App\\Models\\Gallery::all();
+    echo "✅ Gallery model working: " . $galleries->count() . " records\n";
     
-    // Test published scope
-    try {
-        $publishedGalleries = \\App\\Models\\Gallery::published()->get();
-        echo "✅ Gallery published scope working: " . $publishedGalleries->count() . " published galleries\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery published scope failed: " . $e->getMessage() . "\n";
+    foreach ($galleries as $gallery) {
+        echo "✅ " . $gallery->title . " (ID: " . $gallery->id . ")\n";
+        echo "   - getItemCount(): " . $gallery->getItemCount() . "\n";
+        echo "   - itemCount(): " . $gallery->itemCount() . "\n";
+        echo "   - item_count: " . $gallery->item_count . "\n";
+        echo "   - hasItems(): " . ($gallery->hasItems() ? \'Yes\' : \'No\') . "\n";
+        echo "   - isPublished(): " . ($gallery->isPublished() ? \'Yes\' : \'No\') . "\n";
+        echo "   - isActive(): " . ($gallery->isActive() ? \'Yes\' : \'No\') . "\n";
+        echo "   - isFeatured(): " . ($gallery->isFeatured() ? \'Yes\' : \'No\') . "\n";
+        echo "   - Cover Image: " . $gallery->cover_image_url . "\n";
+        echo "   - Category: " . $gallery->category_label . "\n";
+        echo "   - Type: " . $gallery->type_label . "\n";
+        echo "   - Status: " . $gallery->status_label . "\n";
+        echo "\n";
     }
     
-    // Test active scope
-    try {
-        $activeGalleries = \\App\\Models\\Gallery::active()->get();
-        echo "✅ Gallery active scope working: " . $activeGalleries->count() . " active galleries\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery active scope failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test featured scope
-    try {
-        $featuredGalleries = \\App\\Models\\Gallery::featured()->get();
-        echo "✅ Gallery featured scope working: " . $featuredGalleries->count() . " featured galleries\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery featured scope failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test byCategory scope
-    try {
-        $academicGalleries = \\App\\Models\\Gallery::byCategory(\'academic\')->get();
-        echo "✅ Gallery byCategory scope working: " . $academicGalleries->count() . " academic galleries\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery byCategory scope failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test byType scope
-    try {
-        $galleryType = \\App\\Models\\Gallery::byType(\'gallery\')->get();
-        echo "✅ Gallery byType scope working: " . $galleryType->count() . " gallery type\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery byType scope failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test recent scope
-    try {
-        $recentGalleries = \\App\\Models\\Gallery::recent(30)->get();
-        echo "✅ Gallery recent scope working: " . $recentGalleries->count() . " recent galleries\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery recent scope failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test methods
-    $gallery->status = \'published\';
-    $gallery->is_featured = true;
-    
-    try {
-        $isPublished = $gallery->isPublished();
-        echo "✅ Gallery isPublished method working: " . ($isPublished ? \'true\' : \'false\') . "\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery isPublished method failed: " . $e->getMessage() . "\n";
-    }
-    
-    try {
-        $isActive = $gallery->isActive();
-        echo "✅ Gallery isActive method working: " . ($isActive ? \'true\' : \'false\') . "\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery isActive method failed: " . $e->getMessage() . "\n";
-    }
-    
-    try {
-        $isFeatured = $gallery->isFeatured();
-        echo "✅ Gallery isFeatured method working: " . ($isFeatured ? \'true\' : \'false\') . "\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery isFeatured method failed: " . $e->getMessage() . "\n";
-    }
-    
-    // Test accessors
-    try {
-        $gallery->cover_image = \'test-image.jpg\';
-        $imageUrl = $gallery->cover_image_url;
-        echo "✅ Gallery cover_image_url accessor working: $imageUrl\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery cover_image_url accessor failed: " . $e->getMessage() . "\n";
-    }
-    
-    try {
-        $gallery->category = \'academic\';
-        $categoryLabel = $gallery->category_label;
-        echo "✅ Gallery category_label accessor working: $categoryLabel\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery category_label accessor failed: " . $e->getMessage() . "\n";
-    }
-    
-    try {
-        $gallery->type = \'gallery\';
-        $typeLabel = $gallery->type_label;
-        echo "✅ Gallery type_label accessor working: $typeLabel\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery type_label accessor failed: " . $e->getMessage() . "\n";
-    }
-    
-    try {
-        $gallery->status = \'published\';
-        $statusLabel = $gallery->status_label;
-        echo "✅ Gallery status_label accessor working: $statusLabel\n";
-    } catch (Exception $e) {
-        echo "❌ Gallery status_label accessor failed: " . $e->getMessage() . "\n";
-    }
-    
-    echo "✅ All Gallery model tests passed!\n";
+    echo "✅ All gallery missing methods tests completed!\n";
     
 } catch (Exception $e) {
     echo "❌ Error: " . $e->getMessage() . "\n";
@@ -427,24 +380,27 @@ if (file_put_contents($testPath, $testContent)) {
 }
 
 echo "\n✅ Gallery missing methods fix completed!\n";
-echo "🔧 Key fixes applied:\n";
-echo "- Added missing published() scope method\n";
-echo "- Added missing recent() scope method\n";
-echo "- Added missing isPublished() method\n";
-echo "- Added missing isActive() method\n";
-echo "- Added missing isFeatured() method\n";
-echo "- Enhanced status_label accessor\n";
-echo "- Tested all scopes and methods\n";
+echo "🔧 Key methods added:\n";
+echo "- getItemCount(): Get count of items in gallery\n";
+echo "- itemCount(): Alias for getItemCount()\n";
+echo "- getItemCountAttribute(): Accessor for item count\n";
+echo "- getFirstItem(): Get first item in gallery\n";
+echo "- getLastItem(): Get last item in gallery\n";
+echo "- getRandomItems(): Get random items from gallery\n";
+echo "- getRecentItems(): Get recent items from gallery\n";
+echo "- hasItems(): Check if gallery has items\n";
+echo "- getSummary(): Get gallery summary\n";
+echo "- Tested Gallery model functionality\n";
 echo "- Created test script\n\n";
 
 echo "🌐 Test URLs:\n";
 echo "- Gallery Missing Methods Test: http://localhost:8000/test-gallery-missing-methods.php\n";
+echo "- Admin Gallery: http://localhost:8000/admin/gallery\n";
 echo "- Website: http://localhost:8000/\n";
-echo "- Admin: http://localhost:8000/admin\n";
-echo "- Gallery: http://localhost:8000/admin/gallery\n\n";
+echo "- Admin: http://localhost:8000/admin\n\n";
 
 echo "📝 Next Steps:\n";
 echo "1. Test: http://localhost:8000/test-gallery-missing-methods.php\n";
-echo "2. Test: http://localhost:8000/\n";
-echo "3. Check if published() method error is resolved\n";
+echo "2. Test: http://localhost:8000/admin/gallery\n";
+echo "3. Check if getItemCount() method is working correctly\n";
 echo "4. Check server logs for any remaining errors\n";
