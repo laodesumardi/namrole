@@ -1,24 +1,22 @@
-# Allow access to uploads files
+Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ $1 [L]
+    RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
 
-# Set proper MIME types for images
-<IfModule mod_mime.c>
-    AddType image/jpeg .jpg .jpeg
-    AddType image/png .png
-    AddType image/gif .gif
-    AddType image/svg+xml .svg
-    AddType image/webp .webp
-</IfModule>
-
-# Enable CORS for images
 <IfModule mod_headers.c>
-    <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp)$">
-        Header set Access-Control-Allow-Origin "*"
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg)$">
         Header set Cache-Control "public, max-age=31536000"
     </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
 </IfModule>
