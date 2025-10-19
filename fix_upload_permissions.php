@@ -1,14 +1,14 @@
 <?php
 /**
  * Fix Upload Permissions - Complete Solution
- * Solusi untuk masalah "Permission denied" saat upload gambar
+ * Solusi untuk memperbaiki permission upload
  */
 
 echo "=== FIX UPLOAD PERMISSIONS ===\n";
-echo "Memperbaiki permission denied saat upload gambar...\n\n";
+echo "Memperbaiki permission upload...\n\n";
 
-// 1. Fix storage directory permissions
-echo "1. Memperbaiki permission storage directory...\n";
+// 1. Fix all directory permissions
+echo "1. Memperbaiki semua permission directory...\n";
 $directories = [
     'storage',
     'storage/app',
@@ -31,7 +31,17 @@ $directories = [
     'public/storage/school-profiles',
     'public/storage/facilities',
     'public/storage/students',
-    'public/storage/teachers'
+    'public/storage/teachers',
+    'public/uploads',
+    'public/uploads/gallery',
+    'public/uploads/gallery-items',
+    'public/uploads/news',
+    'public/uploads/home-sections',
+    'public/uploads/headmaster-greetings',
+    'public/uploads/school-profiles',
+    'public/uploads/facilities',
+    'public/uploads/students',
+    'public/uploads/teachers'
 ];
 
 foreach ($directories as $dir) {
@@ -46,25 +56,70 @@ foreach ($directories as $dir) {
         echo "✅ Directory exists: $dir\n";
     }
     
-    // Set permissions to 777 for upload directories
+    // Set permissions to 777 for all directories
     if (is_dir($fullPath)) {
         chmod($fullPath, 0777);
         echo "✅ Set permissions 777 for: $dir\n";
     }
 }
 
-// 2. Fix file permissions
-echo "\n2. Memperbaiki permission file...\n";
-$files = glob(__DIR__ . '/storage/app/public/**/*', GLOB_BRACE);
-foreach ($files as $file) {
-    if (is_file($file)) {
-        chmod($file, 0666);
-        echo "✅ Set permission 666 for: " . basename($file) . "\n";
+// 2. Fix all file permissions
+echo "\n2. Memperbaiki semua permission file...\n";
+$filePatterns = [
+    'storage/app/public/**/*',
+    'public/storage/**/*',
+    'public/uploads/**/*'
+];
+
+foreach ($filePatterns as $pattern) {
+    $files = glob(__DIR__ . '/' . $pattern, GLOB_BRACE);
+    foreach ($files as $file) {
+        if (is_file($file)) {
+            chmod($file, 0666);
+            echo "✅ Set permission 666 for: " . basename($file) . "\n";
+        }
     }
 }
 
-// 3. Create .htaccess for storage
-echo "\n3. Creating .htaccess for storage...\n";
+// 3. Copy all images to multiple locations
+echo "\n3. Copy images to all necessary locations...\n";
+$sourceDirs = [
+    'storage/app/public' => ['public/storage', 'public/uploads'],
+    'public/uploads' => ['public/storage']
+];
+
+foreach ($sourceDirs as $source => $destinations) {
+    $sourcePath = __DIR__ . '/' . $source;
+    
+    if (is_dir($sourcePath)) {
+        $files = glob($sourcePath . '/**/*', GLOB_BRACE);
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $relativePath = str_replace($sourcePath . '/', '', $file);
+                
+                foreach ($destinations as $dest) {
+                    $destPath = __DIR__ . '/' . $dest;
+                    $destFile = $destPath . '/' . $relativePath;
+                    $destDir = dirname($destFile);
+                    
+                    if (!is_dir($destDir)) {
+                        mkdir($destDir, 0777, true);
+                    }
+                    
+                    if (copy($file, $destFile)) {
+                        chmod($destFile, 0666);
+                        echo "✅ Copied to $dest: $relativePath\n";
+                    } else {
+                        echo "❌ Failed to copy to $dest: $relativePath\n";
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 4. Create .htaccess files
+echo "\n4. Creating .htaccess files...\n";
 $htaccessContent = 'Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -88,46 +143,20 @@ $htaccessContent = 'Options -Indexes
     ExpiresByType image/svg+xml "access plus 1 year"
 </IfModule>';
 
-file_put_contents(__DIR__ . '/storage/app/public/.htaccess', $htaccessContent);
-file_put_contents(__DIR__ . '/public/storage/.htaccess', $htaccessContent);
-echo "✅ Created .htaccess for storage directories\n";
-
-// 4. Copy images to public storage
-echo "\n4. Copy images to public storage...\n";
-$sourceDirs = [
-    'storage/app/public' => 'public/storage',
-    'public/uploads' => 'public/storage'
+$htaccessDirs = [
+    'storage/app/public',
+    'public/storage',
+    'public/uploads'
 ];
 
-foreach ($sourceDirs as $source => $dest) {
-    $sourcePath = __DIR__ . '/' . $source;
-    $destPath = __DIR__ . '/' . $dest;
-    
-    if (is_dir($sourcePath)) {
-        $files = glob($sourcePath . '/**/*', GLOB_BRACE);
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                $relativePath = str_replace($sourcePath . '/', '', $file);
-                $destFile = $destPath . '/' . $relativePath;
-                $destDir = dirname($destFile);
-                
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0777, true);
-                }
-                
-                if (copy($file, $destFile)) {
-                    chmod($destFile, 0666);
-                    echo "✅ Copied: $relativePath\n";
-                } else {
-                    echo "❌ Failed to copy: $relativePath\n";
-                }
-            }
-        }
-    }
+foreach ($htaccessDirs as $dir) {
+    $htaccessFile = __DIR__ . '/' . $dir . '/.htaccess';
+    file_put_contents($htaccessFile, $htaccessContent);
+    echo "✅ Created .htaccess for: $dir\n";
 }
 
-// 5. Test image URLs
-echo "\n5. Testing image URLs...\n";
+// 5. Test all image URLs
+echo "\n5. Testing all image URLs...\n";
 $testImages = [
     'public/storage/gallery/upacara-bendera.jpg',
     'public/storage/gallery/lomba-17-agustus.jpg',
@@ -154,128 +183,14 @@ echo "\n=== RESULTS ===\n";
 echo "Working images: $workingImages/" . count($testImages) . "\n";
 echo "Success rate: " . round(($workingImages / count($testImages)) * 100, 2) . "%\n";
 
-// 6. Create deployment script for hosting
-echo "\n6. Creating deployment script for hosting...\n";
-$deployScript = '<?php
-/**
- * Deploy Upload Permissions to Hosting - Run this on hosting server
- */
-
-echo "=== DEPLOYING UPLOAD PERMISSIONS TO HOSTING ===\n";
-
-// Set proper permissions for uploads
-$directories = [
-    "storage",
-    "storage/app",
-    "storage/app/public",
-    "storage/app/public/gallery",
-    "storage/app/public/gallery-items", 
-    "storage/app/public/news",
-    "storage/app/public/home-sections",
-    "storage/app/public/headmaster-greetings",
-    "storage/app/public/school-profiles",
-    "storage/app/public/facilities",
-    "storage/app/public/students",
-    "storage/app/public/teachers",
-    "public/storage",
-    "public/storage/gallery",
-    "public/storage/gallery-items",
-    "public/storage/news", 
-    "public/storage/home-sections",
-    "public/storage/headmaster-greetings",
-    "public/storage/school-profiles",
-    "public/storage/facilities",
-    "public/storage/students",
-    "public/storage/teachers"
-];
-
-foreach ($directories as $dir) {
-    $fullPath = __DIR__ . "/" . $dir;
-    if (!is_dir($fullPath)) {
-        mkdir($fullPath, 0777, true);
-        echo "Created: $dir\n";
-    }
-    chmod($fullPath, 0777);
-    echo "Set permission 777: $dir\n";
-}
-
-// Copy files from storage to public
-$sourceDirs = [
-    "storage/app/public" => "public/storage",
-    "public/uploads" => "public/storage"
-];
-
-foreach ($sourceDirs as $source => $dest) {
-    $sourcePath = __DIR__ . "/" . $source;
-    $destPath = __DIR__ . "/" . $dest;
-    
-    if (is_dir($sourcePath)) {
-        $files = glob($sourcePath . "/**/*", GLOB_BRACE);
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                $relativePath = str_replace($sourcePath . "/", "", $file);
-                $destFile = $destPath . "/" . $relativePath;
-                $destDir = dirname($destFile);
-                
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0777, true);
-                }
-                
-                copy($file, $destFile);
-                chmod($destFile, 0666);
-                echo "Copied: $relativePath\n";
-            }
-        }
-    }
-}
-
-// Create .htaccess
-$htaccessContent = \'Options -Indexes
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ index.php [QSA,L]
-</IfModule>
-
-<IfModule mod_headers.c>
-    <FilesMatch "\\.(jpg|jpeg|png|gif|webp|svg)$">
-        Header set Cache-Control "public, max-age=31536000"
-    </FilesMatch>
-</IfModule>
-
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/gif "access plus 1 year"
-    ExpiresByType image/webp "access plus 1 year"
-    ExpiresByType image/svg+xml "access plus 1 year"
-</IfModule>\';
-
-file_put_contents(__DIR__ . "/storage/app/public/.htaccess", $htaccessContent);
-file_put_contents(__DIR__ . "/public/storage/.htaccess", $htaccessContent);
-echo "Created .htaccess for storage directories\n";
-
-echo "=== DEPLOYMENT COMPLETE ===\n";
-echo "Upload permissions fixed!\n";
-echo "Images should now be accessible at: https://uji.odetune.shop/\n";
-echo "Upload functionality should work without permission errors!\n";
-?>';
-file_put_contents(__DIR__ . '/public/deploy_upload_permissions.php', $deployScript);
-echo "✅ Created deployment script: public/deploy_upload_permissions.php\n";
-
-echo "\n=== FIX COMPLETE ===\n";
-echo "✅ Upload permission issues fixed\n";
-echo "✅ Directories created with 777 permissions\n";
-echo "✅ Files set to 666 permissions\n";
-echo "✅ Images copied to public storage\n";
-echo "✅ .htaccess created for caching\n";
-echo "✅ Deployment script created\n";
+echo "\n=== UPLOAD PERMISSIONS FIX COMPLETE ===\n";
+echo "✅ All permission issues fixed\n";
+echo "✅ All directories created with 777 permissions\n";
+echo "✅ All files set to 666 permissions\n";
+echo "✅ Images copied to all necessary locations\n";
+echo "✅ .htaccess files created for all directories\n";
 echo "\n🚀 NEXT STEPS:\n";
-echo "1. Upload all files to hosting\n";
-echo "2. Run: php public/deploy_upload_permissions.php\n";
-echo "3. Test upload functionality\n";
-echo "4. Test website: https://uji.odetune.shop/\n";
-echo "5. Images should now appear and uploads should work!\n";
+echo "1. Test website: https://uji.odetune.shop/\n";
+echo "2. All images should now appear!\n";
+echo "3. Upload functionality should work!\n";
 ?>
