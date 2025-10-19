@@ -4,28 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 
 class Gallery extends Model
 {
     protected $fillable = [
         'title',
-        'slug',
         'description',
         'cover_image',
-        'type',
         'category',
+        'type',
         'status',
-        'is_featured',
-        'is_public',
-        'sort_order',
-        'metadata'
+        'is_featured'
     ];
 
     protected $casts = [
-        'is_featured' => 'boolean',
-        'is_public' => 'boolean',
-        'metadata' => 'array'
+        'is_featured' => 'boolean'
     ];
 
     // Auto-generate slug from title
@@ -49,18 +42,13 @@ class Gallery extends Model
     // Relationships
     public function items()
     {
-        return $this->hasMany(GalleryItem::class)->orderBy('sort_order');
-    }
-
-    public function featuredItems()
-    {
-        return $this->hasMany(GalleryItem::class)->where('is_featured', true)->orderBy('sort_order');
+        return $this->hasMany(GalleryItem::class);
     }
 
     // Scopes
-    public function scopePublished($query)
+    public function scopeActive($query)
     {
-        return $query->where('status', 'published')->where('is_public', true);
+        return $query->where('status', 'active');
     }
 
     public function scopeFeatured($query)
@@ -81,67 +69,74 @@ class Gallery extends Model
     // Accessors
     public function getCoverImageUrlAttribute()
     {
-        if ($this->cover_image) {
-            return asset('storage/' . str_replace('public/', '', $this->cover_image));
+        if (!$this->cover_image) {
+            return asset('images/default-gallery.png');
         }
-        return asset('images/default-gallery.jpg');
+        
+        if (filter_var($this->cover_image, FILTER_VALIDATE_URL)) {
+            return $this->cover_image;
+        }
+        
+        if (str_starts_with($this->cover_image, 'http://') || str_starts_with($this->cover_image, 'https://')) {
+            return $this->cover_image;
+        }
+        
+        // If it starts with storage/, use it directly with asset()
+        if (str_starts_with($this->cover_image, 'storage/')) {
+            return asset($this->cover_image);
+        }
+        
+        // If it starts with galleries/, add storage/ prefix
+        if (str_starts_with($this->cover_image, 'galleries/')) {
+            return asset('storage/' . $this->cover_image);
+        }
+        
+        // If it starts with uploads/galleries/, change to storage/galleries/
+        if (str_starts_with($this->cover_image, 'uploads/galleries/')) {
+            return asset(str_replace('uploads/galleries/', 'storage/galleries/', $this->cover_image));
+        }
+        
+        // If it's just a filename, add the full path
+        if (!str_contains($this->cover_image, '/')) {
+            return asset('storage/galleries/' . $this->cover_image);
+        }
+        
+        // Default fallback
+        return asset('images/default-gallery.png');
     }
 
-    public function getTypeLabelAttribute()
+    public function getImageUrlAttribute()
     {
-        $types = [
-            'photo' => 'Foto',
-            'video' => 'Video',
-            'mixed' => 'Campuran'
-        ];
-
-        return $types[$this->type] ?? ucfirst($this->type);
+        return $this->cover_image_url;
     }
 
     public function getCategoryLabelAttribute()
     {
         $categories = [
-            'kegiatan' => 'Kegiatan Siswa',
-            'event' => 'Event Besar',
-            'profil' => 'Profil Sekolah',
-            'testimoni' => 'Testimoni',
-            'prestasi' => 'Prestasi',
-            'fasilitas' => 'Fasilitas',
-            'lainnya' => 'Lainnya'
+            'academic' => 'Akademik',
+            'extracurricular' => 'Ekstrakurikuler',
+            'event' => 'Acara',
+            'sport' => 'Olahraga',
+            'art' => 'Seni',
+            'other' => 'Lainnya'
         ];
 
         return $categories[$this->category] ?? ucfirst($this->category);
     }
 
-    public function getCategoryLabel()
+    public function getTypeLabelAttribute()
     {
-        return $this->getCategoryLabelAttribute();
+        return $this->type === 'gallery' ? 'Galeri' : 'Album';
     }
 
     public function getStatusLabelAttribute()
     {
         $statuses = [
-            'draft' => 'Draft',
-            'published' => 'Dipublikasikan',
-            'archived' => 'Diarsipkan'
+            'active' => 'Aktif',
+            'inactive' => 'Tidak Aktif',
+            'draft' => 'Draft'
         ];
 
         return $statuses[$this->status] ?? ucfirst($this->status);
-    }
-
-    // Methods
-    public function getItemCount()
-    {
-        return $this->items()->count();
-    }
-
-    public function getFeaturedItemCount()
-    {
-        return $this->featuredItems()->count();
-    }
-
-    public function isPublished()
-    {
-        return $this->status === 'published' && $this->is_public;
     }
 }
