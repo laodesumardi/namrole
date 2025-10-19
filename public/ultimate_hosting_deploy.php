@@ -120,8 +120,8 @@ foreach ($htaccessDirs as $dir) {
     echo "Created .htaccess for: $dir\n";
 }
 
-// Final permission fix
-echo "Setting final permissions...\n";
+// Final permission fix using find commands
+echo "Setting final permissions using find commands...\n";
 exec("find " . __DIR__ . "/storage -type d -exec chmod 777 {} \;");
 exec("find " . __DIR__ . "/public/storage -type d -exec chmod 777 {} \;");
 exec("find " . __DIR__ . "/public/uploads -type d -exec chmod 777 {} \;");
