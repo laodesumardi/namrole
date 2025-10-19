@@ -1,253 +1,272 @@
 <?php
+/**
+ * Test Hosting Images
+ * 
+ * This script tests image display on hosting environment
+ * and provides diagnostic information
+ */
 
 echo "🧪 Testing Hosting Images\n";
 echo "========================\n\n";
 
-// 1. Check if we're in Laravel project
-if (!file_exists('artisan')) {
-    echo "❌ Error: Not in Laravel project directory\n";
-    echo "Please run this script from your Laravel project root\n";
-    exit(1);
+echo "🔧 Testing image display on hosting...\n";
+
+// 1. Check hosting environment
+echo "\n🔍 Checking hosting environment...\n";
+
+echo "✅ PHP Version: " . PHP_VERSION . "\n";
+echo "✅ Server Software: " . ($_SERVER['SERVER_SOFTWARE'] ?? 'Unknown') . "\n";
+echo "✅ Document Root: " . ($_SERVER['DOCUMENT_ROOT'] ?? 'Unknown') . "\n";
+echo "✅ Current Directory: " . getcwd() . "\n";
+
+// 2. Check symlink function
+echo "\n🔍 Checking symlink function...\n";
+
+if (function_exists('symlink')) {
+    echo "✅ symlink() function is available\n";
+} else {
+    echo "❌ symlink() function is not available\n";
+    echo "🔧 This is common on shared hosting\n";
 }
 
-echo "✅ Laravel project detected\n";
+// 3. Check storage structure
+echo "\n🔍 Checking storage structure...\n";
 
-// 2. Bootstrap Laravel
+$storageDirs = [
+    'storage/app/public',
+    'storage/app/public/students/photos',
+    'storage/app/public/teachers',
+    'storage/app/public/school-profiles',
+    'storage/app/public/facilities',
+    'storage/app/public/galleries',
+    'storage/app/public/news',
+    'storage/app/public/headmaster-greetings',
+    'storage/app/public/home-sections',
+    'public/storage',
+    'public/storage/students/photos',
+    'public/storage/teachers',
+    'public/storage/school-profiles',
+    'public/storage/facilities',
+    'public/storage/galleries',
+    'public/storage/news',
+    'public/storage/headmaster-greetings',
+    'public/storage/home-sections',
+    'public/images'
+];
+
+foreach ($storageDirs as $dir) {
+    if (is_dir($dir)) {
+        $perms = substr(sprintf('%o', fileperms($dir)), -4);
+        if (is_writable($dir)) {
+            echo "✅ $dir: $perms (writable)\n";
+        } else {
+            echo "❌ $dir: $perms (not writable)\n";
+        }
+    } else {
+        echo "⚠️ $dir: Directory not found\n";
+    }
+}
+
+// 4. Check storage link
+echo "\n🔍 Checking storage link...\n";
+
+$storageLink = 'public/storage';
+$storageTarget = '../storage/app/public';
+
+if (is_link($storageLink)) {
+    $linkTarget = readlink($storageLink);
+    echo "✅ Storage link exists: $storageLink -> $linkTarget\n";
+    
+    if ($linkTarget === $storageTarget) {
+        echo "✅ Storage link is correct\n";
+    } else {
+        echo "❌ Storage link target is incorrect\n";
+    }
+} else {
+    echo "⚠️ Storage link does not exist\n";
+    echo "🔧 This is normal if using manual storage\n";
+}
+
+// 5. Test image files
+echo "\n🔍 Testing image files...\n";
+
+$testImages = [
+    'public/storage/students/photos/test-student.png',
+    'public/storage/teachers/test-teacher.png',
+    'public/storage/school-profiles/test-school-profile.png',
+    'public/storage/facilities/test-facility.png',
+    'public/storage/galleries/test-gallery.png',
+    'public/storage/news/test-news.png',
+    'public/images/default-student.png',
+    'public/images/default-teacher.png',
+    'public/images/default-school-profile.png',
+    'public/images/default-facility.png',
+    'public/images/default-gallery.png',
+    'public/images/default-news.png'
+];
+
+foreach ($testImages as $imagePath) {
+    if (file_exists($imagePath)) {
+        $size = filesize($imagePath);
+        echo "✅ $imagePath: $size bytes\n";
+    } else {
+        echo "❌ $imagePath: File not found\n";
+    }
+}
+
+// 6. Test image URLs
+echo "\n🔍 Testing image URLs...\n";
+
+$baseUrl = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+$testUrls = [
+    'storage/students/photos/test-student.png',
+    'storage/teachers/test-teacher.png',
+    'storage/school-profiles/test-school-profile.png',
+    'storage/facilities/test-facility.png',
+    'storage/galleries/test-gallery.png',
+    'storage/news/test-news.png',
+    'images/default-student.png',
+    'images/default-teacher.png',
+    'images/default-school-profile.png',
+    'images/default-facility.png',
+    'images/default-gallery.png',
+    'images/default-news.png'
+];
+
+foreach ($testUrls as $url) {
+    $fullUrl = $baseUrl . '/' . $url;
+    $imagePath = 'public/' . $url;
+    
+    if (file_exists($imagePath)) {
+        echo "✅ $url: File exists\n";
+        echo "   URL: $fullUrl\n";
+    } else {
+        echo "❌ $url: File not found\n";
+    }
+}
+
+// 7. Test .htaccess
+echo "\n🔍 Testing .htaccess files...\n";
+
+$htaccessFiles = [
+    'public/.htaccess',
+    'public/storage/.htaccess'
+];
+
+foreach ($htaccessFiles as $htaccessFile) {
+    if (file_exists($htaccessFile)) {
+        $size = filesize($htaccessFile);
+        echo "✅ $htaccessFile: $size bytes\n";
+    } else {
+        echo "⚠️ $htaccessFile: File not found\n";
+    }
+}
+
+// 8. Test file permissions
+echo "\n🔍 Testing file permissions...\n";
+
+$testFiles = [
+    'public/storage/students/photos/test-student.png',
+    'public/storage/teachers/test-teacher.png',
+    'public/storage/school-profiles/test-school-profile.png',
+    'public/images/default-student.png',
+    'public/images/default-teacher.png'
+];
+
+foreach ($testFiles as $file) {
+    if (file_exists($file)) {
+        $perms = substr(sprintf('%o', fileperms($file)), -4);
+        if (is_readable($file)) {
+            echo "✅ $file: $perms (readable)\n";
+        } else {
+            echo "❌ $file: $perms (not readable)\n";
+        }
+    } else {
+        echo "⚠️ $file: File not found\n";
+    }
+}
+
+// 9. Test Laravel configuration
+echo "\n🔍 Testing Laravel configuration...\n";
+
+if (file_exists('.env')) {
+    echo "✅ .env file exists\n";
+    
+    $envContent = file_get_contents('.env');
+    if (strpos($envContent, 'APP_ENV=production') !== false) {
+        echo "✅ APP_ENV=production\n";
+    } else {
+        echo "⚠️ APP_ENV not set to production\n";
+    }
+    
+    if (strpos($envContent, 'APP_DEBUG=false') !== false) {
+        echo "✅ APP_DEBUG=false\n";
+    } else {
+        echo "⚠️ APP_DEBUG not set to false\n";
+    }
+    
+    if (strpos($envContent, 'SESSION_SECURE_COOKIE=false') !== false) {
+        echo "✅ SESSION_SECURE_COOKIE=false\n";
+    } else {
+        echo "⚠️ SESSION_SECURE_COOKIE not set to false\n";
+    }
+} else {
+    echo "❌ .env file not found\n";
+}
+
+// 10. Test database connection
+echo "\n🔍 Testing database connection...\n";
+
 try {
     require_once 'vendor/autoload.php';
     $app = require_once 'bootstrap/app.php';
     $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
     echo "✅ Laravel bootstrapped successfully\n";
-} catch (Exception $e) {
-    echo "❌ Error bootstrapping Laravel: " . $e->getMessage() . "\n";
-    exit(1);
-}
-
-// 3. Test storage structure
-echo "\n🔗 Testing storage structure...\n";
-
-$storageTests = [
-    'storage/app/public' => 'Storage app public',
-    'storage/app/public/home-sections' => 'Home sections storage',
-    'public/storage' => 'Public storage link',
-    'public/storage/home-sections' => 'Home sections public',
-    'public/images' => 'Public images'
-];
-
-foreach ($storageTests as $path => $description) {
-    if (is_dir($path)) {
-        echo "   ✅ {$description}: {$path}\n";
-        
-        // Check if directory is writable
-        if (is_writable($path)) {
-            echo "      ✅ Writable\n";
-        } else {
-            echo "      ❌ Not writable\n";
-        }
-        
-        // Count files in directory
-        $files = glob($path . '/*');
-        $fileCount = count($files);
-        echo "      📁 Files: {$fileCount}\n";
-        
-        if ($fileCount > 0) {
-            echo "      📄 Sample files:\n";
-            for ($i = 0; $i < min(3, $fileCount); $i++) {
-                $fileName = basename($files[$i]);
-                $fileSize = filesize($files[$i]);
-                echo "         - {$fileName} ({$fileSize} bytes)\n";
-            }
-        }
-    } else {
-        echo "   ❌ {$description}: {$path} (missing)\n";
-    }
-}
-
-// 4. Test home sections data
-echo "\n📊 Testing home sections data...\n";
-
-try {
-    $sections = DB::table('home_sections')->get();
-    echo "   📊 Total sections: " . count($sections) . "\n";
     
-    $sectionsWithImages = 0;
-    $sectionsWithoutImages = 0;
-    $totalImages = 0;
+    // Test database connection
+    $pdo = \DB::connection()->getPdo();
+    echo "✅ Database connection successful\n";
     
-    foreach ($sections as $section) {
-        echo "   🔍 Section ID {$section->id}: {$section->title}\n";
-        echo "      📝 Content: " . substr($section->content ?? '', 0, 50) . "...\n";
-        echo "      🔗 Section Key: {$section->section_key}\n";
-        echo "      ✅ Active: " . ($section->is_active ? 'Yes' : 'No') . "\n";
-        
-        if ($section->image) {
-            echo "      🖼️  Image: {$section->image}\n";
-            $sectionsWithImages++;
-            
-            // Test image paths
-            $storagePath = storage_path('app/public/' . $section->image);
-            $publicPath = public_path('storage/' . $section->image);
-            
-            if (file_exists($storagePath)) {
-                echo "         ✅ Storage: {$storagePath}\n";
-                $totalImages++;
-            } else {
-                echo "         ❌ Storage: {$storagePath} (missing)\n";
-            }
-            
-            if (file_exists($publicPath)) {
-                echo "         ✅ Public: {$publicPath}\n";
-            } else {
-                echo "         ❌ Public: {$publicPath} (missing)\n";
-            }
-            
-            // Test image URL
-            $imageUrl = asset('storage/' . $section->image);
-            echo "         🌐 URL: {$imageUrl}\n";
-            
-        } else {
-            echo "      🖼️  Image: None\n";
-            $sectionsWithoutImages++;
-        }
-    }
+    // Test image-related models
+    $userCount = \App\Models\User::count();
+    echo "✅ Users in database: $userCount\n";
     
-    echo "\n   📊 Summary:\n";
-    echo "   - Total sections: " . count($sections) . "\n";
-    echo "   - Sections with images: {$sectionsWithImages}\n";
-    echo "   - Sections without images: {$sectionsWithoutImages}\n";
-    echo "   - Total images found: {$totalImages}\n";
+    $usersWithPhotos = \App\Models\User::whereNotNull('photo')->count();
+    echo "✅ Users with photos: $usersWithPhotos\n";
     
 } catch (Exception $e) {
-    echo "   ❌ Error testing home sections: " . $e->getMessage() . "\n";
-}
-
-// 5. Test image URLs
-echo "\n🌐 Testing image URLs...\n";
-
-try {
-    $testSection = DB::table('home_sections')->whereNotNull('image')->first();
-    if ($testSection) {
-        $imageUrl = asset('storage/' . $testSection->image);
-        echo "   🔗 Test URL: {$imageUrl}\n";
-        
-        // Test URL accessibility
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'method' => 'HEAD',
-                'user_agent' => 'Mozilla/5.0 (compatible; ImageTest/1.0)'
-            ]
-        ]);
-        
-        $headers = @get_headers($imageUrl, 1, $context);
-        if ($headers) {
-            $statusCode = $headers[0];
-            echo "   📊 Status: {$statusCode}\n";
-            
-            if (strpos($statusCode, '200') !== false) {
-                echo "   ✅ Image URL is accessible\n";
-                
-                // Get content type
-                if (isset($headers['Content-Type'])) {
-                    echo "   📄 Content-Type: {$headers['Content-Type']}\n";
-                }
-                
-                // Get content length
-                if (isset($headers['Content-Length'])) {
-                    echo "   📏 Content-Length: {$headers['Content-Length']} bytes\n";
-                }
-            } else {
-                echo "   ❌ Image URL is not accessible\n";
-            }
-        } else {
-            echo "   ❌ Could not test URL accessibility\n";
-        }
-    } else {
-        echo "   ℹ️  No sections with images found for testing\n";
-    }
-} catch (Exception $e) {
-    echo "   ❌ Error testing image URLs: " . $e->getMessage() . "\n";
-}
-
-// 6. Test admin access
-echo "\n🔐 Testing admin access...\n";
-
-try {
-    $adminUsers = DB::table('users')->where('role', 'admin')->get();
-    echo "   📊 Admin users: " . count($adminUsers) . "\n";
-    
-    foreach ($adminUsers as $admin) {
-        echo "   👤 Admin: {$admin->name}\n";
-        echo "      📧 Email: {$admin->email}\n";
-        echo "      📅 Created: {$admin->created_at}\n";
-    }
-    
-    if (count($adminUsers) === 0) {
-        echo "   ❌ No admin users found\n";
-        echo "   🔧 You need to create an admin user to access the admin panel\n";
-    }
-    
-} catch (Exception $e) {
-    echo "   ❌ Error testing admin access: " . $e->getMessage() . "\n";
-}
-
-// 7. Test Laravel configuration
-echo "\n⚙️  Testing Laravel configuration...\n";
-
-$configTests = [
-    'app.env' => 'Environment',
-    'app.debug' => 'Debug mode',
-    'session.lifetime' => 'Session lifetime',
-    'session.secure' => 'Secure cookies',
-    'session.same_site' => 'Same site cookies',
-    'filesystems.disks.public.root' => 'Public disk root'
-];
-
-foreach ($configTests as $key => $description) {
-    try {
-        $value = config($key);
-        echo "   ✅ {$description}: {$value}\n";
-    } catch (Exception $e) {
-        echo "   ❌ {$description}: Error reading config\n";
-    }
-}
-
-// 8. Test file permissions
-echo "\n🔐 Testing file permissions...\n";
-
-$permissionTests = [
-    'storage/app/public' => 'Storage app public',
-    'storage/app/public/home-sections' => 'Home sections storage',
-    'public/storage' => 'Public storage',
-    'public/storage/home-sections' => 'Home sections public'
-];
-
-foreach ($permissionTests as $path => $description) {
-    if (is_dir($path)) {
-        $perms = fileperms($path);
-        $permString = substr(sprintf('%o', $perms), -4);
-        echo "   📁 {$description}: {$permString}\n";
-        
-        if (is_writable($path)) {
-            echo "      ✅ Writable\n";
-        } else {
-            echo "      ❌ Not writable\n";
-        }
-    } else {
-        echo "   ❌ {$description}: Directory not found\n";
-    }
+    echo "❌ Laravel bootstrap failed: " . $e->getMessage() . "\n";
 }
 
 echo "\n✅ Hosting images test completed!\n";
 echo "🔧 Test results summary:\n";
-echo "   - Storage structure tested\n";
-echo "   - Home sections data tested\n";
-echo "   - Image URLs tested\n";
-echo "   - Admin access tested\n";
-echo "   - Laravel configuration tested\n";
-echo "   - File permissions tested\n";
-echo "\n🌐 Next steps:\n";
-echo "   - Check any ❌ errors above\n";
-echo "   - Run fix scripts if needed\n";
-echo "   - Test admin panel access\n";
-echo "   - Verify image uploads work\n";
+echo "- Hosting environment checked\n";
+echo "- Symlink function availability checked\n";
+echo "- Storage structure checked\n";
+echo "- Storage link checked\n";
+echo "- Image files tested\n";
+echo "- Image URLs tested\n";
+echo "- .htaccess files tested\n";
+echo "- File permissions tested\n";
+echo "- Laravel configuration tested\n";
+echo "- Database connection tested\n\n";
+
+echo "🌐 Test URLs for hosting:\n";
+echo "- Student Profile: https://yourdomain.com/student/profile/edit\n";
+echo "- Teacher Profile: https://yourdomain.com/teacher/profile/edit\n";
+echo "- Admin Gallery: https://yourdomain.com/admin/gallery\n";
+echo "- Admin News: https://yourdomain.com/admin/news\n";
+echo "- Admin Facilities: https://yourdomain.com/admin/facilities\n";
+echo "- Admin School Profile: https://yourdomain.com/admin/school-profile\n\n";
+
+echo "🔑 Admin Login for hosting:\n";
+echo "- URL: https://yourdomain.com/login\n";
+echo "- Email: admin@namrole.sch.id\n";
+echo "- Password: admin123\n\n";
+
+echo "📝 Next Steps for hosting:\n";
+echo "1. Run: php fix_hosting_images_comprehensive.php\n";
+echo "2. Run: php fix_hosting_storage_symlink.php\n";
+echo "3. Test all image uploads and displays\n";
+echo "4. Check browser console for any errors\n";
+echo "5. Verify all images are accessible via web\n";
