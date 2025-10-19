@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultimate Force White Text Test</title>
+    <style>
+        body { background-color: #000000; }
+        * { color: #ffffff !important; }
+        .hero-section { color: #ffffff !important; }
+        .hero-section h1, .hero-section h2, .hero-section p, .hero-section span { color: #ffffff !important; }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <h1>Selamat Datang di SMP Negeri 01 Namrole</h1>
+        <h2>Sekolah Unggulan dengan Pendidikan Berkualitas</h2>
+        <p>Selamat Datang di SMP Negeri 01 Namrole</p>
+        <span>Sekolah Unggulan dengan Pendidikan Berkualitas</span>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const allElements = document.querySelectorAll("*");
+            allElements.forEach(function(element) {
+                element.style.color = "#ffffff !important";
+            });
+        });
+    </script>
+</body>
+</html>

@@ -184,6 +184,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset("css/ultimate-force-white.css") }}">
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <!-- Loading Indicator -->
@@ -691,5 +692,6 @@
             });
         });
     </script>
+    <script src="{{ asset("js/ultimate-force-white.js") }}"></script>
 </body>
 </html>

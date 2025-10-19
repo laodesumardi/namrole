@@ -1,0 +1,38 @@
+
+/* ULTIMATE FORCE WHITE TEXT CSS */
+.hero-section, .home-section, .section-hero,
+.section-title, .section-subtitle, .section-description,
+h1, h2, h3, h4, h5, h6, .title, .subtitle, .description,
+.hero-text, .hero-title, .hero-subtitle, .hero-description,
+.welcome-text, .school-text, .quality-text {
+    color: #ffffff !important;
+    color: white !important;
+    color: #fff !important;
+    color: rgb(255, 255, 255) !important;
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Force white text for all text elements */
+* {
+    color: #ffffff !important;
+}
+
+/* Override any existing color styles */
+[style*="color"] {
+    color: #ffffff !important;
+}
+
+/* Force white text for specific hero elements */
+.hero-section h1,
+.hero-section h2,
+.hero-section h3,
+.hero-section p,
+.hero-section span,
+.hero-section div {
+    color: #ffffff !important;
+}
+
+/* Force white text for all elements with text */
+body, html, div, span, p, h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}

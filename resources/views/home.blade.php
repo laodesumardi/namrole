@@ -1,3 +1,24 @@
+
+<style>
+/* Force white text for hero section */
+.hero-section, .home-section, .section-hero {
+    color: #ffffff !important;
+}
+
+.hero-section h1,
+.hero-section h2,
+.hero-section h3,
+.hero-section p,
+.hero-section span,
+.hero-section div {
+    color: #ffffff !important;
+}
+
+/* Force white text for all text elements */
+* {
+    color: #ffffff !important;
+}
+</style>
 @extends('layouts.app')
 
 @section('title', 'Beranda - SMP Negeri 01 Namrole')
@@ -58,3 +79,13 @@
     </div>
 </div>
 @endsection
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const allElements = document.querySelectorAll("*");
+    allElements.forEach(function(element) {
+        element.style.color = "#ffffff !important";
+    });
+});
+</script>

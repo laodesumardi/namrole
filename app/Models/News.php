@@ -103,19 +103,27 @@ class News extends Model
             return $this->featured_image;
         }
         
-        if (str_starts_with($this->featured_image, 'news/')) {
-            return asset('storage/' . $this->featured_image);
-        }
-        
+        // If it starts with storage/, use it directly with asset()
         if (str_starts_with($this->featured_image, 'storage/')) {
             return asset($this->featured_image);
         }
         
-        if (!str_starts_with($this->featured_image, 'news/') && 
-            !str_starts_with($this->featured_image, 'storage/')) {
+        // If it starts with news/, add storage/ prefix
+        if (str_starts_with($this->featured_image, 'news/')) {
             return asset('storage/' . $this->featured_image);
         }
         
+        // If it starts with uploads/news/, change to storage/news/
+        if (str_starts_with($this->featured_image, 'uploads/news/')) {
+            return asset(str_replace('uploads/news/', 'storage/news/', $this->featured_image));
+        }
+        
+        // If it's just a filename, add the full path
+        if (!str_contains($this->featured_image, '/')) {
+            return asset('storage/news/' . $this->featured_image);
+        }
+        
+        // Default fallback
         return asset('images/default-news.png');
     }
 

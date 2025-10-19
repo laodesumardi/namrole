@@ -356,3 +356,4 @@ echo "\n🌐 Test URLs:\n";
 echo "   - Gallery Index: http://localhost:8000/admin/gallery\n";
 echo "   - Gallery Edit: http://localhost:8000/admin/gallery/2/edit\n";
 echo "   - Gallery Create: http://localhost:8000/admin/gallery/create\n";
+

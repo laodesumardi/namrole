@@ -350,3 +350,4 @@ function createDefaultImage($width, $height, $bgColor, $textColor) {
     
     return $imageData;
 }
+
