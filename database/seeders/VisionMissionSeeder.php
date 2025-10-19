@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\VisionMission;
 use Illuminate\Database\Seeder;
+use App\Models\VisionMission;
 
 class VisionMissionSeeder extends Seeder
 {
@@ -13,17 +13,13 @@ class VisionMissionSeeder extends Seeder
     public function run(): void
     {
         VisionMission::create([
-            'vision' => 'Menjadi sekolah unggul yang berkarakter, berprestasi, dan berdaya saing global.',
-            'missions' => [
-                'Menyelenggarakan pendidikan yang berkualitas dengan mengintegrasikan nilai-nilai karakter',
-                'Mengembangkan potensi siswa melalui pembelajaran yang kreatif dan inovatif',
-                'Membina hubungan yang harmonis antara sekolah, orang tua, dan masyarakat',
-                'Menyediakan fasilitas pembelajaran yang memadai dan modern',
-                'Membentuk siswa yang memiliki kepedulian sosial dan lingkungan'
-            ],
+            'vision' => 'Menjadi sekolah unggul yang menghasilkan lulusan berkarakter, berprestasi, dan berdaya saing global',
+            'missions' => json_encode([
+                'Menyelenggarakan pendidikan berkualitas yang mengembangkan potensi siswa secara optimal',
+                'Membentuk karakter siswa yang berakhlak mulia dan berintegritas',
+                'Mengembangkan kompetensi siswa dalam bidang akademik dan non-akademik'
+            ]),
             'is_active' => true,
         ]);
     }
 }
-
-

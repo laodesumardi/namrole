@@ -96,6 +96,11 @@ class Gallery extends Model
             return $this->cover_image;
         }
         
+        // Fallback uploads -> storage
+        if (str_starts_with($this->cover_image, 'uploads/gallery/')) {
+            return asset(str_replace('uploads/gallery/', 'storage/gallery/', $this->cover_image));
+        }
+        
         // If it starts with storage/, use it directly with asset()
         if (str_starts_with($this->cover_image, 'storage/')) {
             return asset($this->cover_image);
@@ -132,6 +137,14 @@ class Gallery extends Model
         
         if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
             return $this->image;
+        }
+        
+        // Fallback uploads -> storage for gallery items and gallery
+        if (str_starts_with($this->image, 'uploads/gallery-items/')) {
+            return asset(str_replace('uploads/gallery-items/', 'storage/gallery-items/', $this->image));
+        }
+        if (str_starts_with($this->image, 'uploads/gallery/')) {
+            return asset(str_replace('uploads/gallery/', 'storage/gallery/', $this->image));
         }
         
         if (str_starts_with($this->image, 'gallery/')) {

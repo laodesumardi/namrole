@@ -44,6 +44,11 @@ class HomeSection extends Model
             return $this->image;
         }
         
+        // Tambahkan fallback untuk path uploads di hosting
+        if (str_starts_with($this->image, 'uploads/home-sections/')) {
+            return asset(str_replace('uploads/home-sections/', 'storage/home-sections/', $this->image));
+        }
+        
         // If it starts with storage/, use it directly with asset()
         if (str_starts_with($this->image, 'storage/')) {
             return asset($this->image);

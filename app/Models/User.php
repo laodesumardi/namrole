@@ -171,6 +171,31 @@ class User extends Authenticatable
             return $this->photo;
         }
         
+        // Fallback uploads -> storage for hosting
+        if (str_starts_with($this->photo, 'uploads/students/photos/')) {
+            return asset(str_replace('uploads/students/photos/', 'storage/students/photos/', $this->photo));
+        }
+        if (str_starts_with($this->photo, 'uploads/students/')) {
+            return asset(str_replace('uploads/students/', 'storage/students/', $this->photo));
+        }
+        if (str_starts_with($this->photo, 'uploads/teachers/photos/')) {
+            return asset(str_replace('uploads/teachers/photos/', 'storage/teachers/photos/', $this->photo));
+        }
+        if (str_starts_with($this->photo, 'uploads/teachers/')) {
+            return asset(str_replace('uploads/teachers/', 'storage/teachers/', $this->photo));
+        }
+        if (str_starts_with($this->photo, 'uploads/users/')) {
+            return asset(str_replace('uploads/users/', 'storage/users/', $this->photo));
+        }
+        if (str_starts_with($this->photo, 'uploads/avatars/')) {
+            return asset(str_replace('uploads/avatars/', 'storage/avatars/', $this->photo));
+        }
+        
+        // If starts with public/, convert to storage/
+        if (str_starts_with($this->photo, 'public/')) {
+            return asset('storage/' . str_replace('public/', '', $this->photo));
+        }
+        
         // Check if it's a storage path with 'storage/' prefix
         if (str_starts_with($this->photo, 'storage/')) {
             return asset($this->photo);

@@ -63,6 +63,11 @@ class GalleryItem extends Model
             return $this->file_path;
         }
         
+        // Fallback uploads -> storage
+        if (str_starts_with($this->file_path, 'uploads/gallery-items/')) {
+            return asset(str_replace('uploads/gallery-items/', 'storage/gallery-items/', $this->file_path));
+        }
+        
         if (str_starts_with($this->file_path, 'gallery-items/')) {
             return asset('storage/' . $this->file_path);
         }
@@ -91,6 +96,11 @@ class GalleryItem extends Model
         
         if (str_starts_with($this->thumbnail_path, 'http://') || str_starts_with($this->thumbnail_path, 'https://')) {
             return $this->thumbnail_path;
+        }
+        
+        // Fallback uploads -> storage
+        if (str_starts_with($this->thumbnail_path, 'uploads/gallery-items/')) {
+            return asset(str_replace('uploads/gallery-items/', 'storage/gallery-items/', $this->thumbnail_path));
         }
         
         if (str_starts_with($this->thumbnail_path, 'gallery-items/')) {
