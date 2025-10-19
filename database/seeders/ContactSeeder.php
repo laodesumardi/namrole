@@ -13,10 +13,10 @@ class ContactSeeder extends Seeder
     public function run(): void
     {
         Contact::create([
-            'address' => "Jl. Pendidikan No. 123\nNamrole, Maluku Tengah",
-            'phone' => '(0911) 123456',
-            'email' => 'smp01namrole@email.com',
-            'website' => 'smpnegeri01namrole.sch.id',
+            'address' => 'Jl. Pendidikan No. 1, Namrole, Buru Selatan, Maluku',
+            'phone' => '(0913) 123456',
+            'email' => 'info@smpnamrole.sch.id',
+            'website' => 'https://smpnamrole.sch.id',
             'is_active' => true,
         ]);
     }
