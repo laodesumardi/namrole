@@ -12,12 +12,14 @@ class Gallery extends Model
         'title',
         'slug',
         'description',
+        'image',
         'cover_image',
         'type',
         'category',
         'status',
         'is_featured',
         'is_public',
+        'is_active',
         'sort_order',
         'metadata'
     ];
@@ -25,6 +27,7 @@ class Gallery extends Model
     protected $casts = [
         'is_featured' => 'boolean',
         'is_public' => 'boolean',
+        'is_active' => 'boolean',
         'metadata' => 'array'
     ];
 
@@ -38,7 +41,7 @@ class Gallery extends Model
                 $gallery->slug = Str::slug($gallery->title);
             }
         });
-
+        
         static::updating(function ($gallery) {
             if ($gallery->isDirty('title') && empty($gallery->slug)) {
                 $gallery->slug = Str::slug($gallery->title);
@@ -81,10 +84,70 @@ class Gallery extends Model
     // Accessors
     public function getCoverImageUrlAttribute()
     {
-        if ($this->cover_image) {
+        if (!$this->cover_image) {
+            return asset('images/default-gallery.jpg');
+        }
+        
+        if (filter_var($this->cover_image, FILTER_VALIDATE_URL)) {
+            return $this->cover_image;
+        }
+        
+        if (str_starts_with($this->cover_image, 'http://') || str_starts_with($this->cover_image, 'https://')) {
+            return $this->cover_image;
+        }
+        
+        // If it starts with storage/, use it directly with asset()
+        if (str_starts_with($this->cover_image, 'storage/')) {
+            return asset($this->cover_image);
+        }
+        
+        // If it starts with gallery/, add storage/ prefix
+        if (str_starts_with($this->cover_image, 'gallery/')) {
+            return asset('storage/' . $this->cover_image);
+        }
+        
+        // If it starts with public/, remove it and add storage/
+        if (str_starts_with($this->cover_image, 'public/')) {
             return asset('storage/' . str_replace('public/', '', $this->cover_image));
         }
+        
+        // If it's just a filename, add the full path
+        if (!str_contains($this->cover_image, '/')) {
+            return asset('storage/gallery/' . $this->cover_image);
+        }
+        
+        // Default fallback
         return asset('images/default-gallery.jpg');
+    }
+
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return asset('images/default-gallery.png');
+        }
+        
+        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
+            return $this->image;
+        }
+        
+        if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
+            return $this->image;
+        }
+        
+        if (str_starts_with($this->image, 'gallery/')) {
+            return asset('storage/' . $this->image);
+        }
+        
+        if (str_starts_with($this->image, 'storage/')) {
+            return asset($this->image);
+        }
+        
+        if (!str_starts_with($this->image, 'gallery/') && 
+            !str_starts_with($this->image, 'storage/')) {
+            return asset('storage/' . $this->image);
+        }
+        
+        return asset('images/default-gallery.png');
     }
 
     public function getTypeLabelAttribute()
@@ -111,11 +174,6 @@ class Gallery extends Model
         ];
 
         return $categories[$this->category] ?? ucfirst($this->category);
-    }
-
-    public function getCategoryLabel()
-    {
-        return $this->getCategoryLabelAttribute();
     }
 
     public function getStatusLabelAttribute()

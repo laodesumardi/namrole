@@ -181,7 +181,7 @@
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-16 w-16">
                                             <img class="h-16 w-16 rounded-lg object-cover" 
-                                                 src="{{ $gallery->cover_image_url }}" 
+                                                 src="{{ $gallery->cover_image_url }}" onerror="this.src='{{ asset('images/default-gallery.png') }}'" 
                                                  alt="{{ $gallery->title }}">
                                         </div>
                                         <div class="ml-4">
@@ -270,7 +270,7 @@
                                 <div class="flex items-center mb-2">
                                     <div class="flex-shrink-0 h-16 w-16 mr-3">
                                         <img class="h-16 w-16 rounded-lg object-cover" 
-                                             src="{{ $gallery->cover_image_url }}" 
+                                             src="{{ $gallery->cover_image_url }}" onerror="this.src='{{ asset('images/default-gallery.png') }}'" 
                                              alt="{{ $gallery->title }}">
                                     </div>
                                     <div class="flex-1">

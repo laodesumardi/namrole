@@ -11,21 +11,18 @@ class GalleryItem extends Model
         'gallery_id',
         'title',
         'description',
-        'file_path',
-        'file_type',
-        'mime_type',
-        'file_size',
-        'width',
-        'height',
-        'duration',
-        'thumbnail_path',
-        'sort_order',
+        'image',
+        'video_url',
+        'type',
         'is_featured',
+        'is_active',
+        'sort_order',
         'metadata'
     ];
 
     protected $casts = [
         'is_featured' => 'boolean',
+        'is_active' => 'boolean',
         'metadata' => 'array'
     ];
 
@@ -36,6 +33,11 @@ class GalleryItem extends Model
     }
 
     // Scopes
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
@@ -43,76 +45,94 @@ class GalleryItem extends Model
 
     public function scopeByType($query, $type)
     {
-        return $query->where('file_type', $type);
+        return $query->where('type', $type);
     }
 
     // Accessors
-    public function getFileUrlAttribute()
+    public function getImageUrlAttribute()
     {
-        if ($this->file_path) {
+        if (!$this->file_path) {
+            return asset('images/default-gallery-item.png');
+        }
+        
+        if (filter_var($this->file_path, FILTER_VALIDATE_URL)) {
+            return $this->file_path;
+        }
+        
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+        
+        if (str_starts_with($this->file_path, 'gallery-items/')) {
             return asset('storage/' . $this->file_path);
         }
-        return null;
+        
+        if (str_starts_with($this->file_path, 'storage/')) {
+            return asset($this->file_path);
+        }
+        
+        if (!str_starts_with($this->file_path, 'gallery-items/') && 
+            !str_starts_with($this->file_path, 'storage/')) {
+            return asset('storage/' . $this->file_path);
+        }
+        
+        return asset('images/default-gallery-item.png');
     }
-
+    
     public function getThumbnailUrlAttribute()
     {
-        if ($this->thumbnail_path) {
-            return asset('storage/' . str_replace('public/', '', $this->thumbnail_path));
-        }
-        return $this->file_url;
-    }
-
-    public function getFileSizeFormattedAttribute()
-    {
-        if (!$this->file_size) return null;
-        
-        $bytes = $this->file_size;
-        $units = ['B', 'KB', 'MB', 'GB'];
-        
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
+        if (!$this->thumbnail_path) {
+            return $this->image_url; // Fallback to main image
         }
         
-        return round($bytes, 2) . ' ' . $units[$i];
-    }
-
-    public function getDurationFormattedAttribute()
-    {
-        if (!$this->duration) return null;
-        
-        $minutes = floor($this->duration / 60);
-        $seconds = $this->duration % 60;
-        
-        return sprintf('%02d:%02d', $minutes, $seconds);
-    }
-
-    public function getDimensionsAttribute()
-    {
-        if ($this->width && $this->height) {
-            return $this->width . 'x' . $this->height;
+        if (filter_var($this->thumbnail_path, FILTER_VALIDATE_URL)) {
+            return $this->thumbnail_path;
         }
-        return null;
+        
+        if (str_starts_with($this->thumbnail_path, 'http://') || str_starts_with($this->thumbnail_path, 'https://')) {
+            return $this->thumbnail_path;
+        }
+        
+        if (str_starts_with($this->thumbnail_path, 'gallery-items/')) {
+            return asset('storage/' . $this->thumbnail_path);
+        }
+        
+        if (str_starts_with($this->thumbnail_path, 'storage/')) {
+            return asset($this->thumbnail_path);
+        }
+        
+        if (!str_starts_with($this->thumbnail_path, 'gallery-items/') && 
+            !str_starts_with($this->thumbnail_path, 'storage/')) {
+            return asset('storage/' . $this->thumbnail_path);
+        }
+        
+        return $this->image_url; // Fallback to main image
+    }
+
+    public function getTypeLabelAttribute()
+    {
+        $types = [
+            'image' => 'Gambar',
+            'video' => 'Video',
+            'document' => 'Dokumen'
+        ];
+
+        return $types[$this->type] ?? ucfirst($this->type);
     }
 
     // Methods
     public function isImage()
     {
-        return $this->file_type === 'image';
+        return $this->type === 'image';
     }
 
     public function isVideo()
     {
-        return $this->file_type === 'video';
+        return $this->type === 'video';
     }
 
-    public function getMimeTypeCategory()
+    public function isDocument()
     {
-        if (str_starts_with($this->mime_type, 'image/')) {
-            return 'image';
-        } elseif (str_starts_with($this->mime_type, 'video/')) {
-            return 'video';
-        }
-        return 'unknown';
+        return $this->type === 'document';
     }
 }

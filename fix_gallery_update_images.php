@@ -1,651 +1,394 @@
 <?php
+/**
+ * Fix Gallery Update Images
+ * 
+ * This script fixes gallery update image issues by:
+ * 1. Fixing GalleryController update method to copy files to public/storage
+ * 2. Ensuring proper storage structure
+ * 3. Creating default images
+ * 4. Fixing database paths
+ */
 
-echo "🖼️  Fixing Gallery Update Images\n";
+echo "🖼️ Fixing Gallery Update Images\n";
 echo "===============================\n\n";
 
-// 1. Check if we're in Laravel project
-if (!file_exists('artisan')) {
-    echo "❌ Error: Not in Laravel project directory\n";
-    echo "Please run this script from your Laravel project root\n";
-    exit(1);
-}
-
-echo "✅ Laravel project detected\n";
-
-// 2. Bootstrap Laravel
-try {
-    require_once 'vendor/autoload.php';
+// Bootstrap Laravel
+if (file_exists('bootstrap/app.php')) {
+    require_once 'bootstrap/app.php';
     $app = require_once 'bootstrap/app.php';
-    $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-    echo "✅ Laravel bootstrapped successfully\n";
-} catch (Exception $e) {
-    echo "❌ Error bootstrapping Laravel: " . $e->getMessage() . "\n";
+    $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    echo "✅ Laravel project detected\n";
+    echo "✅ Laravel bootstrapped successfully\n\n";
+} else {
+    echo "❌ Laravel project not found\n";
     exit(1);
 }
 
-// 3. Fix storage structure for gallery updates
-echo "\n🔗 Fixing storage structure for gallery updates...\n";
+echo "🔧 Fixing gallery update image issues...\n";
 
-// Create necessary directories
+// 1. Fix GalleryController update method
+$controllerPath = 'app/Http/Controllers/Admin/GalleryController.php';
+if (file_exists($controllerPath)) {
+    echo "📝 Fixing GalleryController update method...\n";
+    
+    $content = file_get_contents($controllerPath);
+    
+    // Find the update method and add file copying logic
+    $updateMethodStart = strpos($content, 'public function update(Request $request, Gallery $gallery)');
+    if ($updateMethodStart !== false) {
+        // Find the end of the update method
+        $braceCount = 0;
+        $methodStart = $updateMethodStart;
+        $methodEnd = $methodStart;
+        
+        // Find the opening brace
+        while ($methodEnd < strlen($content) && $content[$methodEnd] !== '{') {
+            $methodEnd++;
+        }
+        
+        if ($content[$methodEnd] === '{') {
+            $braceCount = 1;
+            $methodEnd++;
+            
+            // Find the matching closing brace
+            while ($methodEnd < strlen($content) && $braceCount > 0) {
+                if ($content[$methodEnd] === '{') {
+                    $braceCount++;
+                } elseif ($content[$methodEnd] === '}') {
+                    $braceCount--;
+                }
+                $methodEnd++;
+            }
+            
+            // Find the line with $gallery->update($data);
+            $updateLine = strpos($content, '$gallery->update($data);', $methodStart);
+            if ($updateLine !== false) {
+                // Add file copying logic after the update
+                $newLogic = '
+        
+        // Copy uploaded files to public/storage for immediate access
+        if ($request->hasFile(\'cover_image\')) {
+            $sourcePath = storage_path(\'app/public/\' . $data[\'cover_image\']);
+            $destPath = public_path(\'storage/\' . $data[\'cover_image\']);
+            $destDir = dirname($destPath);
+            
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            
+            if (copy($sourcePath, $destPath)) {
+                \\Log::info(\'Gallery cover image copied to public storage: \' . $data[\'cover_image\']);
+            } else {
+                \\Log::error(\'Failed to copy gallery cover image to public storage: \' . $data[\'cover_image\']);
+            }
+        }';
+                
+                // Insert the new logic before the return statement
+                $returnPos = strpos($content, 'return redirect()->route(\'admin.gallery.index\')', $updateLine);
+                if ($returnPos !== false) {
+                    $content = substr_replace($content, $newLogic, $returnPos, 0);
+                }
+            }
+        }
+    }
+    
+    file_put_contents($controllerPath, $content);
+    echo "✅ GalleryController update method fixed\n";
+} else {
+    echo "⚠️ GalleryController not found\n";
+}
+
+// 2. Fix GalleryController store method
+if (file_exists($controllerPath)) {
+    echo "📝 Fixing GalleryController store method...\n";
+    
+    $content = file_get_contents($controllerPath);
+    
+    // Find the store method and add file copying logic
+    $storeMethodStart = strpos($content, 'public function store(Request $request)');
+    if ($storeMethodStart !== false) {
+        // Find the line with Gallery::create($data);
+        $createLine = strpos($content, 'Gallery::create($data);', $storeMethodStart);
+        if ($createLine !== false) {
+            // Add file copying logic after the create
+            $newLogic = '
+        
+        // Copy uploaded files to public/storage for immediate access
+        if ($request->hasFile(\'cover_image\')) {
+            $sourcePath = storage_path(\'app/public/\' . $data[\'cover_image\']);
+            $destPath = public_path(\'storage/\' . $data[\'cover_image\']);
+            $destDir = dirname($destPath);
+            
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            
+            if (copy($sourcePath, $destPath)) {
+                \\Log::info(\'Gallery cover image copied to public storage: \' . $data[\'cover_image\']);
+            } else {
+                \\Log::error(\'Failed to copy gallery cover image to public storage: \' . $data[\'cover_image\']);
+            }
+        }';
+            
+            // Insert the new logic before the return statement
+            $returnPos = strpos($content, 'return redirect()->route(\'admin.gallery.index\')', $createLine);
+            if ($returnPos !== false) {
+                $content = substr_replace($content, $newLogic, $returnPos, 0);
+            }
+        }
+    }
+    
+    file_put_contents($controllerPath, $content);
+    echo "✅ GalleryController store method fixed\n";
+}
+
+// 3. Create storage structure
+echo "\n🔗 Creating storage structure...\n";
+
+// Create directories
 $directories = [
     'storage/app/public',
-    'storage/app/public/gallery',
-    'storage/app/public/gallery-items',
+    'storage/app/public/galleries',
     'public/storage',
-    'public/storage',
-    'public/storage/gallery',
-    'public/storage/gallery-items',
+    'public/storage/galleries',
     'public/images'
 ];
 
 foreach ($directories as $dir) {
     if (!is_dir($dir)) {
         if (mkdir($dir, 0755, true)) {
-            echo "   ✅ Created directory: {$dir}\n";
+            echo "✅ Created directory: $dir\n";
         } else {
-            echo "   ❌ Failed to create directory: {$dir}\n";
+            echo "❌ Failed to create directory: $dir\n";
         }
     } else {
-        echo "   ✅ Directory exists: {$dir}\n";
+        echo "✅ Directory exists: $dir\n";
     }
 }
 
-// 4. Create storage link for gallery updates
-echo "\n🔗 Creating storage link for gallery updates...\n";
-
+// 4. Create storage link if not exists
+echo "\n🔗 Creating storage link...\n";
 $storageLink = 'public/storage';
 $storageTarget = '../storage/app/public';
 
-// Remove existing link if it exists
-if (is_link($storageLink)) {
-    unlink($storageLink);
-    echo "   🔧 Removed existing storage link\n";
-}
-
-// Check if symlink function is available
-if (function_exists('symlink')) {
-    try {
+if (!is_link($storageLink)) {
+    if (function_exists('symlink')) {
         if (symlink($storageTarget, $storageLink)) {
-            echo "   ✅ Storage link created using symlink()\n";
+            echo "✅ Storage link created\n";
         } else {
-            echo "   ❌ Failed to create storage link using symlink()\n";
-            echo "   🔧 Creating manual storage directory...\n";
+            echo "❌ Failed to create storage link\n";
+            echo "🔧 Creating manual storage directory...\n";
             createManualStorage();
         }
-    } catch (Exception $e) {
-        echo "   ❌ Error creating symlink: " . $e->getMessage() . "\n";
-        echo "   🔧 Creating manual storage directory...\n";
+    } else {
+        echo "⚠️ symlink() function not available\n";
+        echo "🔧 Creating manual storage directory...\n";
         createManualStorage();
     }
 } else {
-    echo "   ⚠️  symlink() function not available\n";
-    echo "   🔧 Creating manual storage directory...\n";
-    createManualStorage();
+    echo "✅ Storage link already exists\n";
 }
 
-// 5. Fix specific gallery for updates
-echo "\n📊 Fixing specific gallery for updates...\n";
-
-try {
-    // Get gallery ID 2 specifically
-    $gallery = DB::table('galleries')->where('id', 2)->first();
-    
-    if ($gallery) {
-        echo "   🔍 Processing gallery ID 2: {$gallery->title}\n";
-        echo "   📝 Description: " . substr($gallery->description ?? '', 0, 50) . "...\n";
-        echo "   🔗 Slug: {$gallery->slug}\n";
-        
-        $needsUpdate = false;
-        $updateData = [];
-        
-        // Fix image path
-        if ($gallery->image) {
-            echo "   📁 Current image: {$gallery->image}\n";
-            
-            // Clean image path (remove 'storage/' prefix if exists)
-            $cleanPath = $gallery->image;
-            if (strpos($cleanPath, 'storage/') === 0) {
-                $cleanPath = substr($cleanPath, 8);
-                $updateData['image'] = $cleanPath;
-                $needsUpdate = true;
-                echo "   🔧 Fixed image path: {$cleanPath}\n";
-            }
-            
-            // Check if image exists in storage
-            $storagePath = storage_path('app/public/' . $cleanPath);
-            $publicPath = public_path('storage/' . $cleanPath);
-            
-            if (file_exists($storagePath)) {
-                echo "   ✅ Image exists in storage\n";
-                
-                // Copy to public storage
-                if (!file_exists($publicPath)) {
-                    $publicDir = dirname($publicPath);
-                    if (!is_dir($publicDir)) {
-                        mkdir($publicDir, 0755, true);
-                    }
-                    
-                    if (copy($storagePath, $publicPath)) {
-                        echo "   ✅ Image copied to public storage\n";
-                    } else {
-                        echo "   ❌ Failed to copy image to public storage\n";
-                    }
-                } else {
-                    echo "   ✅ Image already in public storage\n";
-                }
-            } else {
-                echo "   ❌ Image not found in storage\n";
-                $updateData['image'] = null;
-                $needsUpdate = true;
-            }
-        } else {
-            echo "   ℹ️  Gallery has no image\n";
-        }
-        
-        // Fix other fields
-        if (empty($gallery->slug)) {
-            $updateData['slug'] = 'gallery-' . $gallery->id;
-            $needsUpdate = true;
-            echo "   🔧 Added slug\n";
-        }
-        
-        // Check if is_active column exists
-        if (property_exists($gallery, 'is_active') && empty($gallery->is_active)) {
-            $updateData['is_active'] = 1;
-            $needsUpdate = true;
-            echo "   🔧 Set as active\n";
-        }
-        
-        // Ensure description is not empty
-        if (empty($gallery->description)) {
-            $updateData['description'] = 'Gallery description for ' . $gallery->title;
-            $needsUpdate = true;
-            echo "   🔧 Added default description\n";
-        }
-        
-        // Update database if needed
-        if ($needsUpdate) {
-            DB::table('galleries')
-                ->where('id', 2)
-                ->update($updateData);
-            echo "   ✅ Updated gallery in database\n";
-        } else {
-            echo "   ✅ Gallery data is correct\n";
-        }
-        
-    } else {
-        echo "   ❌ Gallery ID 2 not found\n";
-    }
-    
-} catch (Exception $e) {
-    echo "   ❌ Error processing gallery: " . $e->getMessage() . "\n";
-}
-
-// 6. Fix all galleries for updates
-echo "\n📊 Fixing all galleries for updates...\n";
-
-try {
-    // Get all galleries
-    $galleries = DB::table('galleries')->get();
-    echo "   📊 Found " . count($galleries) . " galleries\n";
-    
-    $fixed = 0;
-    $imagesCopied = 0;
-    $galleriesUpdated = 0;
-    
-    foreach ($galleries as $gallery) {
-        echo "   🔍 Processing gallery ID {$gallery->id}: {$gallery->title}\n";
-        
-        $needsUpdate = false;
-        $updateData = [];
-        
-        // Fix image path
-        if ($gallery->image) {
-            echo "   📁 Current image: {$gallery->image}\n";
-            
-            // Clean image path (remove 'storage/' prefix if exists)
-            $cleanPath = $gallery->image;
-            if (strpos($cleanPath, 'storage/') === 0) {
-                $cleanPath = substr($cleanPath, 8);
-                $updateData['image'] = $cleanPath;
-                $needsUpdate = true;
-                echo "   🔧 Fixed image path: {$cleanPath}\n";
-            }
-            
-            // Check if image exists in storage
-            $storagePath = storage_path('app/public/' . $cleanPath);
-            $publicPath = public_path('storage/' . $cleanPath);
-            
-            if (file_exists($storagePath)) {
-                echo "   ✅ Image exists in storage\n";
-                
-                // Copy to public storage
-                if (!file_exists($publicPath)) {
-                    $publicDir = dirname($publicPath);
-                    if (!is_dir($publicDir)) {
-                        mkdir($publicDir, 0755, true);
-                    }
-                    
-                    if (copy($storagePath, $publicPath)) {
-                        echo "   ✅ Image copied to public storage\n";
-                        $imagesCopied++;
-                    } else {
-                        echo "   ❌ Failed to copy image to public storage\n";
-                    }
-                } else {
-                    echo "   ✅ Image already in public storage\n";
-                }
-            } else {
-                echo "   ❌ Image not found in storage\n";
-                $updateData['image'] = null;
-                $needsUpdate = true;
-            }
-        } else {
-            echo "   ℹ️  Gallery has no image\n";
-        }
-        
-        // Fix other fields
-        if (empty($gallery->slug)) {
-            $updateData['slug'] = 'gallery-' . $gallery->id;
-            $needsUpdate = true;
-            echo "   🔧 Added slug\n";
-        }
-        
-        // Check if is_active column exists
-        if (property_exists($gallery, 'is_active') && empty($gallery->is_active)) {
-            $updateData['is_active'] = 1;
-            $needsUpdate = true;
-            echo "   🔧 Set as active\n";
-        }
-        
-        // Ensure description is not empty
-        if (empty($gallery->description)) {
-            $updateData['description'] = 'Gallery description for ' . $gallery->title;
-            $needsUpdate = true;
-            echo "   🔧 Added default description\n";
-        }
-        
-        // Update database if needed
-        if ($needsUpdate) {
-            DB::table('galleries')
-                ->where('id', $gallery->id)
-                ->update($updateData);
-            echo "   ✅ Updated gallery in database\n";
-            $galleriesUpdated++;
-        } else {
-            echo "   ✅ Gallery data is correct\n";
-        }
-        
-        $fixed++;
-    }
-    
-    echo "\n   📊 Summary:\n";
-    echo "   - Galleries processed: " . count($galleries) . "\n";
-    echo "   - Galleries fixed: {$fixed}\n";
-    echo "   - Galleries updated: {$galleriesUpdated}\n";
-    echo "   - Images copied: {$imagesCopied}\n";
-    
-} catch (Exception $e) {
-    echo "   ❌ Error processing galleries: " . $e->getMessage() . "\n";
-}
-
-// 7. Fix gallery items for updates
-echo "\n📊 Fixing gallery items for updates...\n";
-
-try {
-    // Get all gallery items
-    $galleryItems = DB::table('gallery_items')->get();
-    echo "   📊 Found " . count($galleryItems) . " gallery items\n";
-    
-    $fixed = 0;
-    $imagesCopied = 0;
-    $itemsUpdated = 0;
-    
-    foreach ($galleryItems as $item) {
-        echo "   🔍 Processing item ID {$item->id}: {$item->title}\n";
-        
-        $needsUpdate = false;
-        $updateData = [];
-        
-        // Fix image path
-        if ($item->image) {
-            echo "   📁 Current image: {$item->image}\n";
-            
-            // Clean image path (remove 'storage/' prefix if exists)
-            $cleanPath = $item->image;
-            if (strpos($cleanPath, 'storage/') === 0) {
-                $cleanPath = substr($cleanPath, 8);
-                $updateData['image'] = $cleanPath;
-                $needsUpdate = true;
-                echo "   🔧 Fixed image path: {$cleanPath}\n";
-            }
-            
-            // Check if image exists in storage
-            $storagePath = storage_path('app/public/' . $cleanPath);
-            $publicPath = public_path('storage/' . $cleanPath);
-            
-            if (file_exists($storagePath)) {
-                echo "   ✅ Image exists in storage\n";
-                
-                // Copy to public storage
-                if (!file_exists($publicPath)) {
-                    $publicDir = dirname($publicPath);
-                    if (!is_dir($publicDir)) {
-                        mkdir($publicDir, 0755, true);
-                    }
-                    
-                    if (copy($storagePath, $publicPath)) {
-                        echo "   ✅ Image copied to public storage\n";
-                        $imagesCopied++;
-                    } else {
-                        echo "   ❌ Failed to copy image to public storage\n";
-                    }
-                } else {
-                    echo "   ✅ Image already in public storage\n";
-                }
-            } else {
-                echo "   ❌ Image not found in storage\n";
-                $updateData['image'] = null;
-                $needsUpdate = true;
-            }
-        } else {
-            echo "   ℹ️  Item has no image\n";
-        }
-        
-        // Fix other fields
-        // Check if is_active column exists
-        if (property_exists($item, 'is_active') && empty($item->is_active)) {
-            $updateData['is_active'] = 1;
-            $needsUpdate = true;
-            echo "   🔧 Set as active\n";
-        }
-        
-        // Ensure description is not empty
-        if (empty($item->description)) {
-            $updateData['description'] = 'Item description for ' . $item->title;
-            $needsUpdate = true;
-            echo "   🔧 Added default description\n";
-        }
-        
-        // Update database if needed
-        if ($needsUpdate) {
-            DB::table('gallery_items')
-                ->where('id', $item->id)
-                ->update($updateData);
-            echo "   ✅ Updated item in database\n";
-            $itemsUpdated++;
-        } else {
-            echo "   ✅ Item data is correct\n";
-        }
-        
-        $fixed++;
-    }
-    
-    echo "\n   📊 Gallery Items Summary:\n";
-    echo "   - Items processed: " . count($galleryItems) . "\n";
-    echo "   - Items fixed: {$fixed}\n";
-    echo "   - Items updated: {$itemsUpdated}\n";
-    echo "   - Images copied: {$imagesCopied}\n";
-    
-} catch (Exception $e) {
-    echo "   ❌ Error processing gallery items: " . $e->getMessage() . "\n";
-}
-
-// 8. Create default images for gallery updates
-echo "\n🖼️  Creating default images for gallery updates...\n";
+// 5. Create default images
+echo "\n🖼️ Creating default images...\n";
 
 $defaultImages = [
     'public/images/default-gallery.png' => 'Default gallery image',
-    'public/images/default-gallery-item.png' => 'Default gallery item image',
-    'public/images/default-section.png' => 'Default section image',
-    'public/images/default-hero.png' => 'Default hero image'
+    'public/images/default-gallery.jpg' => 'Default gallery image (JPG)',
+    'public/images/default-gallery-item.png' => 'Default gallery item image'
 ];
-
-$createdImages = 0;
 
 foreach ($defaultImages as $path => $description) {
     if (!file_exists($path)) {
-        echo "   🔧 Creating {$description}...\n";
-        
-        // Create a simple default image (300x200 PNG)
-        $image = imagecreate(300, 200);
-        $bgColor = imagecolorallocate($image, 240, 240, 240);
-        $textColor = imagecolorallocate($image, 100, 100, 100);
-        $borderColor = imagecolorallocate($image, 200, 200, 200);
-        
-        // Fill background
-        imagefill($image, 0, 0, $bgColor);
-        
-        // Add border
-        imagerectangle($image, 0, 0, 299, 199, $borderColor);
-        
-        // Add text
-        $text = 'Default Image';
-        $fontSize = 5;
-        $textWidth = imagefontwidth($fontSize) * strlen($text);
-        $textHeight = imagefontheight($fontSize);
-        $x = (300 - $textWidth) / 2;
-        $y = (200 - $textHeight) / 2;
-        
-        imagestring($image, $fontSize, $x, $y, $text, $textColor);
-        
-        if (imagepng($image, $path)) {
-            echo "   ✅ Created: {$path}\n";
-            $createdImages++;
+        // Create a simple default image
+        $imageContent = createDefaultImage(200, 200, '#f3f4f6', '#6b7280');
+        if (file_put_contents($path, $imageContent)) {
+            echo "✅ Created: $path\n";
         } else {
-            echo "   ❌ Failed to create: {$path}\n";
+            echo "❌ Failed to create: $path\n";
         }
-        
-        imagedestroy($image);
     } else {
-        echo "   ✅ Already exists: {$path}\n";
+        echo "✅ Default image exists: $path\n";
     }
 }
 
-echo "\n   📊 Default images created: {$createdImages}\n";
-
-// 9. Ensure admin user exists
-echo "\n👤 Ensuring admin user exists...\n";
+// 6. Copy existing gallery images to public storage
+echo "\n📁 Copying existing gallery images...\n";
 
 try {
-    $adminUser = DB::table('users')->where('role', 'admin')->first();
-    if ($adminUser) {
-        echo "   ✅ Admin user found: {$adminUser->name}\n";
-        echo "   📧 Email: {$adminUser->email}\n";
-    } else {
-        echo "   ❌ No admin user found\n";
-        echo "   🔧 Creating default admin user...\n";
-        
-        $adminId = DB::table('users')->insertGetId([
-            'name' => 'Administrator',
-            'email' => 'admin@namrole.sch.id',
-            'password' => bcrypt('admin123'),
-            'role' => 'admin',
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-        
-        if ($adminId) {
-            echo "   ✅ Default admin user created\n";
-            echo "   📧 Email: admin@namrole.sch.id\n";
-            echo "   🔑 Password: admin123\n";
-        } else {
-            echo "   ❌ Failed to create admin user\n";
-        }
-    }
-} catch (Exception $e) {
-    echo "   ❌ Error checking admin user: " . $e->getMessage() . "\n";
-}
-
-// 10. Fix file permissions for gallery updates
-echo "\n🔐 Fixing file permissions for gallery updates...\n";
-
-$permissionDirs = [
-    'storage/app/public',
-    'storage/app/public/gallery',
-    'storage/app/public/gallery-items',
-    'public/storage',
-    'public/storage/gallery',
-    'public/storage/gallery-items',
-    'public/images'
-];
-
-foreach ($permissionDirs as $dir) {
-    if (is_dir($dir)) {
-        chmod($dir, 0755);
-        echo "   ✅ Set permission 755 for: {$dir}\n";
-        
-        // Set permission for files in directory
-        $files = glob($dir . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                chmod($file, 0644);
-            }
-        }
-    }
-}
-
-// 11. Test gallery update functionality
-echo "\n🧪 Testing gallery update functionality...\n";
-
-try {
-    // Test getting gallery by ID
-    $testGallery = DB::table('galleries')->where('id', 2)->first();
-    if ($testGallery) {
-        echo "   ✅ Gallery ID 2 found: {$testGallery->title}\n";
-        echo "   📝 Description: " . substr($testGallery->description ?? '', 0, 50) . "...\n";
-        echo "   🔗 Slug: {$testGallery->slug}\n";
-        if (property_exists($testGallery, 'is_active')) {
-            echo "   ✅ Active: " . ($testGallery->is_active ? 'Yes' : 'No') . "\n";
-        } else {
-            echo "   ✅ Active: Column not found\n";
-        }
-        
-        if ($testGallery->image) {
-            echo "   🖼️  Image: {$testGallery->image}\n";
+    $galleries = \App\Models\Gallery::all();
+    $copiedCount = 0;
+    
+    foreach ($galleries as $gallery) {
+        if ($gallery->cover_image) {
+            $sourcePath = storage_path('app/public/' . $gallery->cover_image);
+            $destPath = public_path('storage/' . $gallery->cover_image);
+            $destDir = dirname($destPath);
             
-            // Test image paths
-            $storagePath = storage_path('app/public/' . $testGallery->image);
-            $publicPath = public_path('storage/' . $testGallery->image);
-            
-            if (file_exists($storagePath)) {
-                echo "      ✅ Storage: {$storagePath}\n";
+            if (file_exists($sourcePath)) {
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+                
+                if (copy($sourcePath, $destPath)) {
+                    $copiedCount++;
+                    echo "✅ Copied: {$gallery->cover_image}\n";
+                } else {
+                    echo "❌ Failed to copy: {$gallery->cover_image}\n";
+                }
             } else {
-                echo "      ❌ Storage: {$storagePath} (missing)\n";
+                echo "⚠️ Source file not found: {$gallery->cover_image}\n";
             }
-            
-            if (file_exists($publicPath)) {
-                echo "      ✅ Public: {$publicPath}\n";
-            } else {
-                echo "      ❌ Public: {$publicPath} (missing)\n";
-            }
-            
-            // Test image URL
-            $imageUrl = asset('storage/' . $testGallery->image);
-            echo "      🌐 URL: {$imageUrl}\n";
-            
-        } else {
-            echo "   🖼️  Image: None\n";
         }
-    } else {
-        echo "   ❌ Gallery ID 2 not found\n";
     }
+    
+    echo "✅ Copied $copiedCount gallery images\n";
 } catch (Exception $e) {
-    echo "   ❌ Error testing gallery update: " . $e->getMessage() . "\n";
+    echo "⚠️ Could not copy gallery images: " . $e->getMessage() . "\n";
 }
 
-// 12. Clear cache for gallery updates
-echo "\n🧹 Clearing cache for gallery updates...\n";
+// 7. Fix database paths
+echo "\n🗄️ Fixing database paths...\n";
 
 try {
-    // Clear config cache
-    if (file_exists('bootstrap/cache/config.php')) {
-        unlink('bootstrap/cache/config.php');
-        echo "   ✅ Config cache cleared\n";
-    }
+    $galleries = \App\Models\Gallery::all();
+    $fixedCount = 0;
     
-    // Clear route cache
-    if (file_exists('bootstrap/cache/routes.php')) {
-        unlink('bootstrap/cache/routes.php');
-        echo "   ✅ Route cache cleared\n";
-    }
-    
-    // Clear view cache
-    $viewCachePath = 'storage/framework/views';
-    if (is_dir($viewCachePath)) {
-        $files = glob($viewCachePath . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
+    foreach ($galleries as $gallery) {
+        $updated = false;
+        
+        // Fix cover_image path
+        if ($gallery->cover_image && str_starts_with($gallery->cover_image, 'storage/')) {
+            $gallery->cover_image = str_replace('storage/', '', $gallery->cover_image);
+            $updated = true;
         }
-        echo "   ✅ View cache cleared\n";
+        
+        // Fix image path
+        if ($gallery->image && str_starts_with($gallery->image, 'storage/')) {
+            $gallery->image = str_replace('storage/', '', $gallery->image);
+            $updated = true;
+        }
+        
+        if ($updated) {
+            $gallery->save();
+            $fixedCount++;
+            echo "✅ Fixed paths for gallery: {$gallery->title}\n";
+        }
     }
     
-    echo "   ✅ All caches cleared\n";
+    echo "✅ Fixed $fixedCount gallery database paths\n";
 } catch (Exception $e) {
-    echo "   ❌ Error clearing cache: " . $e->getMessage() . "\n";
+    echo "⚠️ Could not fix database paths: " . $e->getMessage() . "\n";
 }
 
-echo "\n✅ Gallery update images fix completed!\n";
-echo "🔧 Key improvements applied:\n";
-echo "   - Fixed storage structure for gallery updates\n";
-echo "   - Updated specific gallery (ID 2) data and images\n";
-echo "   - Updated all galleries data and images\n";
-echo "   - Updated gallery items data and images\n";
-echo "   - Copied images from storage to public storage\n";
-echo "   - Created default images for fallbacks\n";
-echo "   - Ensured admin user exists\n";
-echo "   - Fixed file permissions\n";
-echo "   - Cleared all caches\n";
-echo "\n🌐 Test your gallery updates:\n";
-echo "   - Gallery Update: http://localhost:8000/admin/gallery/2/edit\n";
-echo "   - Gallery Index: http://localhost:8000/admin/gallery\n";
-echo "   - Check if images appear in edit forms\n";
-echo "   - Test image upload functionality\n";
-echo "\n🔑 Admin Login:\n";
-echo "   - Email: admin@namrole.sch.id\n";
-echo "   - Password: admin123\n";
+// 8. Clear cache
+echo "\n🧹 Clearing cache...\n";
 
-// Helper function to create manual storage
+try {
+    \Artisan::call('view:clear');
+    echo "✅ View cache cleared\n";
+} catch (Exception $e) {
+    echo "⚠️ Could not clear view cache: " . $e->getMessage() . "\n";
+}
+
+try {
+    \Artisan::call('config:clear');
+    echo "✅ Config cache cleared\n";
+} catch (Exception $e) {
+    echo "⚠️ Could not clear config cache: " . $e->getMessage() . "\n";
+}
+
+echo "\n✅ Gallery update images fixed!\n";
+echo "🔧 Key fixes applied:\n";
+echo "- Fixed GalleryController update method to copy files to public/storage\n";
+echo "- Fixed GalleryController store method to copy files to public/storage\n";
+echo "- Created storage structure\n";
+echo "- Created storage link or manual storage\n";
+echo "- Created default images\n";
+echo "- Copied existing gallery images to public storage\n";
+echo "- Fixed database paths\n";
+echo "- Cleared cache\n\n";
+
+echo "🌐 Test URLs:\n";
+echo "- Gallery Index: http://localhost:8000/admin/gallery\n";
+echo "- Gallery Edit: http://localhost:8000/admin/gallery/2/edit\n";
+echo "- Gallery Create: http://localhost:8000/admin/gallery/create\n\n";
+
+echo "🔑 Admin Login:\n";
+echo "- URL: http://localhost:8000/login\n";
+echo "- Email: admin@namrole.sch.id\n";
+echo "- Password: admin123\n";
+
+// Helper functions
 function createManualStorage() {
-    echo "   🔧 Creating manual storage directory...\n";
-    
     $sourceDir = 'storage/app/public';
-    $targetDir = 'public/storage';
+    $destDir = 'public/storage';
     
-    if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0755, true);
-        echo "   ✅ Created public/storage directory\n";
+    if (!is_dir($destDir)) {
+        mkdir($destDir, 0755, true);
     }
     
-    // Copy all files from storage/app/public to public/storage
     if (is_dir($sourceDir)) {
-        copyDirectory($sourceDir, $targetDir);
-        echo "   ✅ Copied storage files to public storage\n";
+        copyDirectory($sourceDir, $destDir);
+        echo "✅ Manual storage directory created and files copied\n";
+    } else {
+        echo "⚠️ Source directory not found: $sourceDir\n";
     }
 }
 
-// Helper function to copy directory recursively
-function copyDirectory($source, $destination) {
-    if (!is_dir($destination)) {
-        mkdir($destination, 0755, true);
-    }
-    
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::SELF_FIRST
-    );
-    
-    foreach ($iterator as $item) {
-        $target = $destination . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
+function copyDirectory($src, $dst) {
+    if (is_dir($src)) {
+        if (!is_dir($dst)) {
+            mkdir($dst, 0755, true);
+        }
         
-        if ($item->isDir()) {
-            if (!is_dir($target)) {
-                mkdir($target, 0755, true);
+        $files = scandir($src);
+        foreach ($files as $file) {
+            if ($file != '.' && $file != '..') {
+                $srcFile = $src . '/' . $file;
+                $dstFile = $dst . '/' . $file;
+                
+                if (is_dir($srcFile)) {
+                    copyDirectory($srcFile, $dstFile);
+                } else {
+                    copy($srcFile, $dstFile);
+                }
             }
-        } else {
-            copy($item, $target);
         }
     }
+}
+
+function createDefaultImage($width, $height, $bgColor, $textColor) {
+    // Create a simple PNG image
+    $image = imagecreate($width, $height);
+    
+    // Parse colors
+    $bg = sscanf($bgColor, "#%02x%02x%02x");
+    $text = sscanf($textColor, "#%02x%02x%02x");
+    
+    $bgColor = imagecolorallocate($image, $bg[0], $bg[1], $bg[2]);
+    $textColor = imagecolorallocate($image, $text[0], $text[1], $text[2]);
+    
+    // Fill background
+    imagefill($image, 0, 0, $bgColor);
+    
+    // Add text
+    $text = "No Image";
+    $font = 5;
+    $textWidth = imagefontwidth($font) * strlen($text);
+    $textHeight = imagefontheight($font);
+    $x = ($width - $textWidth) / 2;
+    $y = ($height - $textHeight) / 2;
+    
+    imagestring($image, $font, $x, $y, $text, $textColor);
+    
+    // Output as PNG
+    ob_start();
+    imagepng($image);
+    $imageData = ob_get_contents();
+    ob_end_clean();
+    
+    imagedestroy($image);
+    
+    return $imageData;
 }

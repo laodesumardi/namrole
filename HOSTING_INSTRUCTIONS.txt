@@ -1,0 +1,29 @@
+🚀 PANDUAN HOSTING WEBSITE SEKOLAH
+
+1. UPLOAD FILE KE HOSTING:
+   - Upload semua file ke public_html
+   - Pastikan .env sudah dikonfigurasi
+
+2. SETUP DATABASE:
+   - Buat database baru
+   - Update .env dengan database info
+   - Jalankan: php artisan migrate --force
+   - Jalankan: php artisan db:seed --force
+
+3. SETUP STORAGE:
+   - Jalankan: php artisan storage:link
+   - Copy semua gambar ke public/storage/
+   - Set permissions: chmod -R 755 storage/
+
+4. TEST WEBSITE:
+   - Buka website di browser
+   - Check semua halaman
+   - Check gambar muncul
+   - Test admin panel
+
+5. TROUBLESHOOTING:
+   - Jika gambar tidak muncul: check storage symlink
+   - Jika error 500: check .env dan permissions
+   - Jika error 404: check file paths
+
+✅ WEBSITE SIAP ONLINE!

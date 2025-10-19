@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Teacher;
 use Illuminate\Support\Facades\Hash;
 
 class RoleBasedDataSeeder extends Seeder
@@ -47,27 +46,7 @@ class RoleBasedDataSeeder extends Seeder
             ]
         );
 
-        // Create corresponding Teacher record
-        Teacher::updateOrCreate(
-            ['nip' => '198505151990031001'],
-            [
-                'nip' => '198505151990031001',
-                'name' => 'Budi Santoso, S.Pd',
-                'email' => 'guru@smpnamrole.sch.id',
-                'phone' => '081234567001',
-                'address' => 'Jl. Guru No. 1, Namrole',
-                'birth_date' => '1985-05-15',
-                'gender' => 'male',
-                'subject' => 'Matematika',
-                'education' => 'S1 Pendidikan Matematika',
-                'education_level' => 'S1 Pendidikan Matematika',
-                'position' => 'Guru Matematika',
-                'join_date' => '1990-03-01',
-                'bio' => 'Guru Matematika yang berpengalaman dalam mengajar siswa SMP.',
-                'type' => 'teacher',
-                'is_active' => true
-            ]
-        );
+        // Teacher data is already stored in User model with role='teacher'
 
         // Students must register through the registration form
         // No automatic student creation
