@@ -51,6 +51,11 @@ class Gallery extends Model
         return $query->where('status', 'active');
     }
 
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
@@ -64,6 +69,11 @@ class Gallery extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeRecent($query, $days = 30)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
     }
 
     // Accessors
@@ -134,9 +144,26 @@ class Gallery extends Model
         $statuses = [
             'active' => 'Aktif',
             'inactive' => 'Tidak Aktif',
-            'draft' => 'Draft'
+            'draft' => 'Draft',
+            'published' => 'Dipublikasikan'
         ];
 
         return $statuses[$this->status] ?? ucfirst($this->status);
+    }
+
+    // Methods
+    public function isPublished()
+    {
+        return $this->status === 'published';
+    }
+
+    public function isActive()
+    {
+        return $this->status === 'active';
+    }
+
+    public function isFeatured()
+    {
+        return $this->is_featured === true;
     }
 }
